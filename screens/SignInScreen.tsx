@@ -25,9 +25,9 @@ export default function SignInScreen() {
     setLoading(true);
     setError(null);
     try {
-      const { createdSessionId, setActive: setActiveSession } = await startOAuthFlow();
-      if (createdSessionId) {
-        await setActiveSession({ session: createdSessionId });
+      const result = await startOAuthFlow();
+      if (result?.createdSessionId && result?.setActive) {
+        await result.setActive({ session: result.createdSessionId });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed');
