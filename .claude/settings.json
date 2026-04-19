@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm start *)",
+      "Bash(gcloud --version)",
+      "Bash(export GCP_PROJECT_ID=\"REDACTED\")",
+      "Bash(gcloud config *)",
+      "Bash(gcloud services *)",
+      "Bash(chmod +x /Users/adamaslan/code/gcp3-mobile/scripts/setup-oauth.sh)",
+      "Bash(chmod +x /Users/adamaslan/code/gcp3-mobile/scripts/setup-vercel-env.sh)",
+      "Bash(/Users/adamaslan/code/gcp3-mobile/scripts/setup-oauth.sh)",
+      "Bash(chmod +x /Users/adamaslan/code/gcp3-mobile/scripts/check-phase1.sh)",
+      "Bash(/Users/adamaslan/code/gcp3-mobile/scripts/check-phase1.sh)",
+      "Bash(chmod +x scripts/auto-complete-all.sh)",
+      "Bash(chmod +x scripts/auto-complete-phases.sh)",
+      "Bash(chmod +x scripts/check-phase1.sh)",
+      "Bash(chmod +x scripts/setup-oauth.sh)",
+      "Bash(./scripts/auto-complete-all.sh 120 --interactive)"
+    ]
+  }
+}

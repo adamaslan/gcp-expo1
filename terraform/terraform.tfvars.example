@@ -1,0 +1,12 @@
+# Terraform variables for GCP OAuth setup
+# Copy this file to terraform.tfvars and update with your values
+
+# REQUIRED: Your GCP Project ID
+# Find it at: https://console.cloud.google.com/project
+project_id = "your-gcp-project-id"
+
+# OPTIONAL: Application name (defaults to "Nuwrrrld")
+app_name = "Nuwrrrld"
+
+# OPTIONAL: GCP region (defaults to "us-central1")
+region = "us-central1"
