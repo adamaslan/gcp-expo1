@@ -112,9 +112,8 @@ lerna-debug.log*
 # DOCUMENTATION AND ARCHIVED FILES
 # ============================================================================
 
-# docs (but keep docs/archived for historical reference)
-/docs
-!docs/archived/
+# Keep active docs, ignore archived subfolder
+/docs/archived/
 docs/**/.DS_Store
 
 # ============================================================================

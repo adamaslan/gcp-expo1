@@ -1,16 +1,46 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { useEffect, useState } from 'react';
+import { ClerkProvider } from '@clerk/clerk-expo';
+import { AuthProvider } from '@/lib/auth-provider';
+import * as SecureStore from 'expo-secure-store';
 
-export default function App() {
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+if (!publishableKey) {
+  throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY environment variable');
+}
+
+const tokenCache = {
+  async getToken(key: string) {
+    try {
+      const item = await SecureStore.getItemAsync(key);
+      if (item) {
+        console.log(`${key} was used 🔐 \n`);
+      } else {
+        console.log('No values stored under key: ' + key);
+      }
+      return item;
+    } catch (error) {
+      console.error('SecureStore error: ', error);
+      await SecureStore.deleteItemAsync(key);
+      return null;
+    }
+  },
+  async saveToken(key: string, value: string) {
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch (err) {
+      console.error('Failed to save token:', err);
+    }
+  },
+};
+
+function AppContent() {
   const [clerkStatus, setClerkStatus] = useState('checking...');
-  const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
   useEffect(() => {
-    const key = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
-    setPublishableKey(key || null);
-
-    if (key) {
+    if (publishableKey) {
       setClerkStatus('✅ Clerk credentials loaded');
     } else {
       setClerkStatus('❌ Missing Clerk publishable key');
@@ -20,7 +50,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Phase 3: Auth Setup</Text>
+        <Text style={styles.title}>Phase 3: Auth Integration</Text>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Clerk Configuration</Text>
@@ -31,23 +61,35 @@ export default function App() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Environment Variables</Text>
-          <Text style={styles.envVar}>
-            EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: {publishableKey ? '✓' : '✗'}
-          </Text>
+          <Text style={styles.cardTitle}>Auth Components</Text>
+          <Text style={styles.envVar}>✓ Sign-In Screen</Text>
+          <Text style={styles.envVar}>✓ Sign-Up Screen</Text>
+          <Text style={styles.envVar}>✓ Two-Factor Auth</Text>
+          <Text style={styles.envVar}>✓ Auth Provider</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Sign-In/Sign-Up Status</Text>
-          <Text style={styles.note}>
-            Components ready for integration in screens/SignInScreen.tsx and screens/HomeScreen.tsx
-          </Text>
+          <Text style={styles.cardTitle}>Resilience Features</Text>
+          <Text style={styles.envVar}>✓ Retry with exponential backoff</Text>
+          <Text style={styles.envVar}>✓ Rate limiting</Text>
+          <Text style={styles.envVar}>✓ Session caching</Text>
+          <Text style={styles.envVar}>✓ Structured logging</Text>
         </View>
 
-        <Text style={styles.version}>v1.0.0 - Phase 3 Testing</Text>
+        <Text style={styles.version}>v1.0.0 - Phase 3 Complete</Text>
       </View>
       <StatusBar style="auto" />
     </View>
+  );
+}
+
+export default function App() {
+  return (
+    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ClerkProvider>
   );
 }
 
