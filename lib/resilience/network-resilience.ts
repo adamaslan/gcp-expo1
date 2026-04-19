@@ -38,11 +38,14 @@ export async function withRetry<T>(
         throw lastError;
       }
 
-      const delay = Math.min(
+      const baseDelay = Math.min(
         initialDelayMs * Math.pow(backoffMultiplier, attempt),
         maxDelayMs
       );
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      // Add jitter: randomize delay between 50% and 100% of calculated delay
+      // This prevents "thundering herd" where multiple clients retry simultaneously
+      const jitteredDelay = baseDelay * (0.5 + Math.random() * 0.5);
+      await new Promise((resolve) => setTimeout(resolve, jitteredDelay));
     }
   }
 

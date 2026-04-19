@@ -9,11 +9,21 @@ terraform {
 }
 
 variable "project_id" {
-  default = "REDACTED"
+  description = "GCP Project ID. Must be explicitly provided or set via TF_VAR_project_id"
+  type        = string
+  # No default - requires explicit specification to avoid accidental deployments
 }
 
 variable "app_name" {
-  default = "Nuwrrrld"
+  description = "Application name for GCP resources"
+  type        = string
+  default     = "Nuwrrrld"
+}
+
+variable "region" {
+  description = "GCP region for resources"
+  type        = string
+  default     = "us-central1"
 }
 
 provider "google" {

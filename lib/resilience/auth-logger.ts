@@ -17,14 +17,47 @@ interface LogEntry {
 class AuthLogger {
   private logs: LogEntry[] = [];
   private maxLogs = 100;
+  private sensitiveFields = [
+    'token',
+    'secret',
+    'password',
+    'credential',
+    'key',
+    'api_key',
+    'apiKey',
+    'auth',
+    'authorization',
+    'jwt',
+    'oauth',
+    'session_id',
+    'sessionId',
+    'refresh_token',
+    'refreshToken',
+    'private_key',
+    'privateKey',
+  ];
+
+  private redactSensitiveData(obj: Record<string, unknown>): Record<string, unknown> {
+    const redacted = { ...obj };
+    for (const field of this.sensitiveFields) {
+      for (const key in redacted) {
+        if (key.toLowerCase().includes(field.toLowerCase())) {
+          redacted[key] = '[REDACTED]';
+        }
+      }
+    }
+    return redacted;
+  }
 
   private log(level: LogLevel, action: string, message: string, metadata?: Record<string, unknown>, error?: Error) {
+    const redactedMetadata = metadata ? this.redactSensitiveData(metadata) : undefined;
+
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
       action,
       message,
-      metadata,
+      metadata: redactedMetadata,
       error: error?.message,
     };
 
@@ -34,7 +67,7 @@ class AuthLogger {
       this.logs = this.logs.slice(-this.maxLogs);
     }
 
-    console.log(`[${level.toUpperCase()}] ${action}: ${message}`, metadata);
+    console.log(`[${level.toUpperCase()}] ${action}: ${message}`, redactedMetadata);
   }
 
   debug(action: string, message: string, metadata?: Record<string, unknown>) {
