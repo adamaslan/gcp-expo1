@@ -1,7 +1,81 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# ============================================================================
+# SECURITY - NEVER COMMIT CREDENTIALS
+# ============================================================================
+
+# Environment files (ALL variants)
+.env
+.env.local
+.env.*.local
+.env.production.local
+.env.development.local
+.env.test.local
+
+# API keys and secrets
+.env.secrets
+*.key
+*.pem
+*.p8
+*.p12
+*.jks
+*.pfx
+*.crt
+*.cert
+
+# AWS, GCP, Azure credentials
+.aws/
+.gcloud/
+.azure/
+credentials.json
+service-account-key.json
+*-credentials.json
+*-private-key.json
+
+# OAuth and authentication
+.oauth/
+.clerk/
+clerk-*.json
+*-oauth-*.json
+
+# SSH and git credentials
+.ssh/
+.git-credentials
+id_rsa
+id_ed25519
+known_hosts
+
+# Vercel and deployment secrets
+.vercel/
+.vercel.json
+.env.vercel
+vercel-env-*.json
+
+# Database and backend secrets
+.db/
+*.sqlite
+*.sqlite3
+database.yml
+.pgpass
+
+# IDE and local config (personal overrides)
+.vscode/settings.json
+.idea/
+.DS_Store
+*.swp
+*.swo
+*~
+.env.local.json
+.claude/settings.local.json
+
+# ============================================================================
+# BUILD AND DEPENDENCIES
+# ============================================================================
+
 # dependencies
 node_modules/
+.pnp
+.pnp.js
 
 # Expo
 .expo/
@@ -12,11 +86,8 @@ expo-env.d.ts
 # Native
 .kotlin/
 *.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+.gradle/
+build/
 
 # Metro
 .metro-health-check*
@@ -25,21 +96,55 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
+*.log
+*.log.*
+lerna-debug.log*
 
 # typescript
 *.tsbuildinfo
+.tsbuild/
 
 # generated native folders
 /ios
 /android
 
-# docs
+# ============================================================================
+# DOCUMENTATION AND ARCHIVED FILES
+# ============================================================================
+
+# docs (but keep docs/archived for historical reference)
 /docs
+!docs/archived/
+docs/**/.DS_Store
+
+# ============================================================================
+# CLAUDE CODE
+# ============================================================================
+
+# Claude Code local settings and state
+.claude/
+!.claude/commands/
+!.claude/CLAUDE.md
+
+# ============================================================================
+# DEPLOYMENT AND RUNTIME
+# ============================================================================
+
 .vercel
+.next/
+out/
+.cache/
+.parcel-cache/
+.nuxt/
+dist/
+.cache-loader/
+coverage/
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+*.sublime-workspace
+*.sublime-project

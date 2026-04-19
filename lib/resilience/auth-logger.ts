@@ -37,13 +37,20 @@ class AuthLogger {
     'privateKey',
   ];
 
-  private redactSensitiveData(obj: Record<string, unknown>): Record<string, unknown> {
-    const redacted = { ...obj };
-    for (const field of this.sensitiveFields) {
-      for (const key in redacted) {
-        if (key.toLowerCase().includes(field.toLowerCase())) {
-          redacted[key] = '[REDACTED]';
-        }
+  private redactSensitiveData(obj: unknown): unknown {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(item => this.redactSensitiveData(item));
+
+    const redacted: Record<string, unknown> = {};
+    for (const key in obj) {
+      const value = (obj as Record<string, unknown>)[key];
+      if (this.sensitiveFields.some(field => key.toLowerCase().includes(field.toLowerCase()))) {
+        redacted[key] = '[REDACTED]';
+      } else if (typeof value === 'object' && value !== null) {
+        redacted[key] = this.redactSensitiveData(value);
+      } else {
+        redacted[key] = value;
       }
     }
     return redacted;
