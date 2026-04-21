@@ -1,50 +1,87 @@
-/**
- * Sign-in screen with client-side validation and error handling
- */
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSignIn } from '@clerk/clerk-expo';
+import { useRouter } from 'expo-router';
 import { View, StyleSheet, Text, TextInput, Pressable, ActivityIndicator, Alert } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+import { signInLimiter } from '@/lib/resilience/rate-limiter';
+import { authLogger } from '@/lib/resilience/auth-logger';
+import { withRetry } from '@/lib/resilience/network-resilience';
+
+const MAX_RETRIES = 3;
+const OFFLINE_MODE_KEY = 'offline_auth_session';
+const SESSION_TIMEOUT_MS = 5 * 60 * 1000;
 
 interface SignInState {
   email: string;
   password: string;
   error: string;
   loading: boolean;
-  isLoaded: boolean;
 }
 
 export default function SignInScreen() {
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const router = useRouter();
   const [state, setState] = useState<SignInState>({
     email: '',
     password: '',
     error: '',
     loading: false,
-    isLoaded: true,
   });
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Validate email format
+  useEffect(() => {
+    checkCachedSession();
+  }, []);
+
+  async function checkCachedSession() {
+    try {
+      const cachedSession = await SecureStore.getItemAsync(OFFLINE_MODE_KEY);
+      if (cachedSession) {
+        const parsedSession = JSON.parse(cachedSession);
+        const isValid = Date.now() - parsedSession.timestamp < SESSION_TIMEOUT_MS;
+        if (isValid) {
+          router.replace('/(tabs)');
+        } else {
+          await SecureStore.deleteItemAsync(OFFLINE_MODE_KEY);
+        }
+      }
+    } catch (err) {
+      console.log('Cache check failed:', err);
+    }
+  }
+
   const isValidEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  // Validate password length
   const isValidPassword = (password: string): boolean => {
     return password.length >= 6;
   };
 
-  async function handleSignIn() {
-    // Guard: Check if loaded
-    if (!state.isLoaded) return;
+  async function cacheSession(sessionId: string) {
+    try {
+      const sessionData = JSON.stringify({
+        sessionId,
+        timestamp: Date.now(),
+        email: state.email,
+      });
+      await SecureStore.setItemAsync(OFFLINE_MODE_KEY, sessionData);
+    } catch (err) {
+      console.warn('Failed to cache session:', err);
+    }
+  }
 
-    // Client-side validation
+  async function handleSignIn() {
+    if (!isLoaded) return;
+
+    // Validation
     if (!state.email.trim() || !state.password.trim()) {
       setState(prev => ({ ...prev, error: 'Please enter email and password' }));
       return;
     }
 
     if (!isValidEmail(state.email)) {
-      setState(prev => ({ ...prev, error: 'Please enter a valid email address' }));
+      setState(prev => ({ ...prev, error: 'Invalid email address' }));
       return;
     }
 
@@ -53,19 +90,41 @@ export default function SignInScreen() {
       return;
     }
 
+    // Rate limiting
+    if (signInLimiter.isRateLimited(state.email)) {
+      const remaining = signInLimiter.getRemainingAttempts(state.email);
+      authLogger.warn('signin_rate_limited', 'Rate limit exceeded', { email: state.email, remaining });
+      setState(prev => ({ ...prev, error: `Too many attempts. Try again later. (${remaining} remaining)` }));
+      return;
+    }
+
     setState(prev => ({ ...prev, error: '', loading: true }));
+    setRetryCount(0);
+    authLogger.info('signin_start', 'Sign-in attempt', { email: state.email });
 
     try {
-      // In a real app, call authentication API
-      // const result = await signIn.create({ identifier: email, password });
-      // await setActive({ session: result.createdSessionId });
+      await withRetry(
+        async () => {
+          const result = await signIn.create({ identifier: state.email, password: state.password });
 
-      // Mock success
-      console.log('Sign-in attempt with:', state.email);
-      Alert.alert('Success', `Signed in as ${state.email}`);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Sign-in failed';
-      setState(prev => ({ ...prev, error: errorMessage }));
+          if (result.status === 'complete') {
+            await setActive({ session: result.createdSessionId });
+            await cacheSession(result.createdSessionId);
+            authLogger.info('signin_success', 'Sign-in successful', { email: state.email });
+            signInLimiter.reset(state.email);
+            router.replace('/(tabs)');
+          } else if (result.status === 'needs_second_factor') {
+            router.push({ pathname: '/sign-in-2fa', params: { sessionId: result.createdSessionId } });
+          } else {
+            throw new Error('Sign in incomplete. Please try again.');
+          }
+        },
+        { maxAttempts: MAX_RETRIES, initialDelayMs: 500, maxDelayMs: 5000 }
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Sign-in failed';
+      authLogger.error('signin_failed', 'Sign-in error', err as Error, { email: state.email });
+      setState(prev => ({ ...prev, error: msg }));
     } finally {
       setState(prev => ({ ...prev, loading: false }));
     }
@@ -75,7 +134,7 @@ export default function SignInScreen() {
     <View style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Sign In</Text>
-        <Text style={styles.subtitle}>Enter your credentials to continue</Text>
+        <Text style={styles.subtitle}>Enter your credentials</Text>
 
         {state.error && (
           <View style={styles.errorBox}>
@@ -85,7 +144,7 @@ export default function SignInScreen() {
 
         <TextInput
           style={styles.input}
-          placeholder="Email address"
+          placeholder="Email"
           placeholderTextColor="#999"
           value={state.email}
           onChangeText={(email) => setState(prev => ({ ...prev, email }))}
@@ -116,9 +175,9 @@ export default function SignInScreen() {
           )}
         </Pressable>
 
-        <Text style={styles.helpText}>
-          Demo mode: Use any email and password (min 6 chars)
-        </Text>
+        <Pressable onPress={() => router.push('/sign-up')}>
+          <Text style={styles.linkText}>Don't have an account? Sign up</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -183,11 +242,10 @@ const styles = StyleSheet.create({
     color: '#c62828',
     fontSize: 14,
   },
-  helpText: {
-    marginTop: 20,
-    fontSize: 12,
-    color: '#999',
-    fontStyle: 'italic',
+  linkText: {
+    color: '#4285F4',
+    fontSize: 14,
+    marginTop: 16,
     textAlign: 'center',
   },
 });
