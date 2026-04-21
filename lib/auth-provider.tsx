@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { useAuth as useClerkAuth } from '@clerk/clerk-expo';
+import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-expo';
 
 interface AuthContextType {
   isLoaded: boolean;
@@ -13,13 +13,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SESSION_CACHE_KEY = 'auth_session_cache';
+// Keep in sync with OFFLINE_MODE_KEY in app/sign-in.tsx
+const SESSION_CACHE_KEY = 'offline_auth_session';
 const TOKEN_CACHE_KEY = 'auth_token_cache';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 500;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { isLoaded, isSignedIn, user, sessionId } = useClerkAuth();
+  const { isLoaded, isSignedIn, sessionId } = useClerkAuth();
+  const { user } = useUser();
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 

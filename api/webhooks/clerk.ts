@@ -2,7 +2,20 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { Webhook } from "svix";
 import { authLogger } from "@/lib/resilience/auth-logger";
 
+export const config = {
+  api: { bodyParser: false },
+};
+
 const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET || "";
+
+async function getRawBody(req: NextApiRequest): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", reject);
+  });
+}
 
 type WebhookEvent = {
   type: string;
@@ -25,8 +38,7 @@ export default async function handler(
   try {
     const wh = new Webhook(WEBHOOK_SECRET);
 
-    // Get the raw body for verification
-    const payload = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const payload = await getRawBody(req);
     const headers = req.headers as Record<string, string>;
 
     // Verify webhook signature

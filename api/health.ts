@@ -40,7 +40,7 @@ async function checkClerkHealth(): Promise<boolean> {
     const timeout = setTimeout(() => controller.abort(), 5000);
 
     try {
-      const response = await fetch("https://api.clerk.com/v1/health", {
+      const response = await fetch("https://api.clerk.com/v1/users?limit=1", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,

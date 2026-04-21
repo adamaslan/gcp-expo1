@@ -28,9 +28,10 @@ export default function StatusScreen() {
     try {
       setError(null);
 
+      const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
       const [healthRes, configRes] = await Promise.all([
-        fetch("/api/health"),
-        fetch("/api/config"),
+        fetch(`${baseUrl}/api/health`),
+        fetch(`${baseUrl}/api/config`),
       ]);
 
       if (healthRes.ok) {
