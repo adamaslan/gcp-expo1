@@ -19,6 +19,9 @@ Quick navigation for all project documentation.
 - **[ALL_PHASES_GUIDE.md](./ALL_PHASES_GUIDE.md)** - Complete guide for all 5 phases
 - **[CLAUDE.md](./CLAUDE.md)** - Project guidelines and policies
 
+## Runbooks
+- **[PRODUCTION_CLERK.md](./PRODUCTION_CLERK.md)** - Move Clerk from `pk_test_` dev keys to `pk_live_` production keys for App Store / TestFlight
+
 ## Archived Documentation
 Less frequently referenced docs are in [`/archived`](./archived/):
 - Detailed implementation guides

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from './secure-storage';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-expo';
 
 interface AuthContextType {

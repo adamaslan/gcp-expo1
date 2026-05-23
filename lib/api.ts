@@ -1,25 +1,13 @@
-/**
- * API utility for backend communication with proper error handling
- */
+// Thin compatibility shim — existing screens import from here unchanged.
+// New code should import from lib/clients/gcp3.ts, lib/clients/holdfold.ts,
+// or lib/clients/aitext.ts directly.
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+import { httpJson, type HttpOptions } from './http';
 
-async function getToken(): Promise<string | null> {
-  // In a real app, retrieve from secure storage
-  // For now, return null (unauthenticated)
-  return null;
-}
-
-/**
- * Safe URL resolution that handles path combinations properly
- */
-function resolveUrl(path: string, baseUrl: string): URL {
-  // Ensure baseUrl ends with / and path doesn't start with /
-  // This prevents path from being treated as absolute
-  const normalizedBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-  const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
-  return new URL(normalizedPath, normalizedBase);
-}
+const BACKEND_URL =
+  process.env.EXPO_PUBLIC_GCP3_BACKEND_URL ||
+  process.env.EXPO_PUBLIC_BACKEND_URL ||
+  'http://localhost:8000';
 
 export async function fetchBackend<T>(
   path: string,
@@ -29,41 +17,12 @@ export async function fetchBackend<T>(
     params?: Record<string, string>;
   }
 ): Promise<T> {
-  const token = await getToken();
-  const url = resolveUrl(path, BACKEND_URL);
-
-  // Add query parameters
-  if (options?.params) {
-    Object.entries(options.params).forEach(([key, value]) => {
-      url.searchParams.append(key, value);
-    });
-  }
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+  const httpOptions: HttpOptions = {
+    method: options?.method,
+    body: options?.body,
+    params: options?.params,
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(url.toString(), {
-    method: options?.method || 'GET',
-    headers,
-    body: options?.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`Backend ${res.status}: ${body}`);
-  }
-
-  // Handle 204 No Content responses (no body to parse)
-  if (res.status === 204) {
-    return {} as T;
-  }
-
-  return res.json() as Promise<T>;
+  return httpJson<T>(BACKEND_URL, path, httpOptions);
 }
 
 export async function getMarketData() {
