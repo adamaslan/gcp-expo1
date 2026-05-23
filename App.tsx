@@ -1,9 +1,15 @@
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import { useEffect, useState } from 'react';
-import { ClerkProvider } from '@clerk/clerk-expo';
-import { AuthProvider } from '@/lib/auth-provider';
-import * as SecureStore from 'expo-secure-store';
+import { StyleSheet, View, Text, ActivityIndicator, SafeAreaView } from 'react-native';
+import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
+import { AuthProvider } from './lib/auth-provider';
+import * as SecureStore from './lib/secure-storage';
+import BriefingScreen from './screens/BriefingScreen';
+import HoldFoldScreen from './screens/HoldFoldScreen';
+import ChatScreen from './screens/ChatScreen';
+import SignInScreen from './screens/SignInScreen';
+import TabBar, { type TabKey } from './components/TabBar';
+import { theme } from './lib/ui/theme';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -11,16 +17,13 @@ if (!publishableKey) {
   throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY environment variable');
 }
 
+const SESSION_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour hard cap
+const SESSION_STARTED_KEY = 'session_started_at';
+
 const tokenCache = {
   async getToken(key: string) {
     try {
-      const item = await SecureStore.getItemAsync(key);
-      if (item) {
-        console.log(`${key} was used 🔐 \n`);
-      } else {
-        console.log('No values stored under key: ' + key);
-      }
-      return item;
+      return await SecureStore.getItemAsync(key);
     } catch (error) {
       console.error('SecureStore error: ', error);
       await SecureStore.deleteItemAsync(key);
@@ -36,50 +39,87 @@ const tokenCache = {
   },
 };
 
-function AppContent() {
-  const [clerkStatus, setClerkStatus] = useState('checking...');
+function AppRoot() {
+  const { isLoaded, isSignedIn, signOut } = useAuth();
+  const [tab, setTab] = useState<TabKey>('briefing');
+  const [sessionExpired, setSessionExpired] = useState(false);
 
+  // Track sign-in timestamp and enforce a 1-hour hard cap. Defense-in-depth
+  // alongside Clerk Dashboard session-lifetime config (see PRODUCTION_CLERK.md).
   useEffect(() => {
-    if (publishableKey) {
-      setClerkStatus('✅ Clerk credentials loaded');
-    } else {
-      setClerkStatus('❌ Missing Clerk publishable key');
+    if (!isSignedIn) {
+      setSessionExpired(false);
+      return;
     }
-  }, []);
+
+    let cancelled = false;
+
+    async function ensureSessionTimestamp() {
+      const existing = await SecureStore.getItemAsync(SESSION_STARTED_KEY);
+      if (!existing) {
+        await SecureStore.setItemAsync(SESSION_STARTED_KEY, String(Date.now()));
+      }
+    }
+    ensureSessionTimestamp();
+
+    async function checkExpiry() {
+      if (cancelled) return;
+      const startedRaw = await SecureStore.getItemAsync(SESSION_STARTED_KEY);
+      if (!startedRaw) return;
+      const started = parseInt(startedRaw, 10);
+      if (Number.isFinite(started) && Date.now() - started > SESSION_MAX_AGE_MS) {
+        setSessionExpired(true);
+        await SecureStore.deleteItemAsync(SESSION_STARTED_KEY);
+        try {
+          await signOut();
+        } catch (err) {
+          console.warn('Sign-out on expiry failed:', err);
+        }
+      }
+    }
+
+    checkExpiry();
+    const interval = setInterval(checkExpiry, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isSignedIn, signOut]);
+
+  if (!isLoaded) {
+    return (
+      <View style={styles.splash}>
+        <ActivityIndicator size="large" color={theme.accent.indigo} />
+      </View>
+    );
+  }
+
+  const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === 'true';
+
+  if (!isSignedIn && !demoMode) {
+    return (
+      <View style={styles.shell}>
+        {sessionExpired && (
+          <View style={styles.expiryBanner}>
+            <Text style={styles.expiryText}>Session expired after 1 hour — please sign in again.</Text>
+          </View>
+        )}
+        <SignInScreen />
+        <StatusBar style="light" />
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Phase 3: Auth Integration</Text>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Clerk Configuration</Text>
-          <Text style={styles.status}>{clerkStatus}</Text>
-          {publishableKey && (
-            <Text style={styles.detail}>Key: {publishableKey.substring(0, 20)}...</Text>
-          )}
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Auth Components</Text>
-          <Text style={styles.envVar}>✓ Sign-In Screen</Text>
-          <Text style={styles.envVar}>✓ Sign-Up Screen</Text>
-          <Text style={styles.envVar}>✓ Two-Factor Auth</Text>
-          <Text style={styles.envVar}>✓ Auth Provider</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Resilience Features</Text>
-          <Text style={styles.envVar}>✓ Retry with exponential backoff</Text>
-          <Text style={styles.envVar}>✓ Rate limiting</Text>
-          <Text style={styles.envVar}>✓ Session caching</Text>
-          <Text style={styles.envVar}>✓ Structured logging</Text>
-        </View>
-
-        <Text style={styles.version}>v1.0.0 - Phase 3 Complete</Text>
+    <SafeAreaView style={styles.shell}>
+      <View style={styles.screenWrap}>
+        {tab === 'briefing' && <BriefingScreen />}
+        {tab === 'trade' && <HoldFoldScreen />}
+        {tab === 'chat' && <ChatScreen />}
       </View>
-      <StatusBar style="auto" />
-    </View>
+      <TabBar active={tab} onChange={setTab} />
+      <StatusBar style="light" />
+    </SafeAreaView>
   );
 }
 
@@ -87,69 +127,50 @@ export default function App() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <AuthProvider>
-        <AppContent />
+        <AppRoot />
       </AuthProvider>
     </ClerkProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  shell: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    paddingTop: 40,
+    backgroundColor: theme.bg.base,
   },
-  content: {
+  screenWrap: {
     flex: 1,
-    paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: '#333',
+  splash: {
+    flex: 1,
+    backgroundColor: theme.bg.base,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 12,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  splashTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.text.primary,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  status: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  detail: {
-    fontSize: 12,
-    color: '#999',
-    fontFamily: 'monospace',
-  },
-  envVar: {
+  splashSubtitle: {
     fontSize: 13,
-    color: '#666',
-    marginVertical: 4,
-  },
-  note: {
-    fontSize: 13,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  version: {
-    fontSize: 12,
-    color: '#999',
+    color: theme.text.secondary,
     textAlign: 'center',
-    marginTop: 'auto',
-    marginBottom: 20,
+    lineHeight: 19,
+  },
+  expiryBanner: {
+    backgroundColor: 'rgba(251,191,36,0.15)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(251,191,36,0.3)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingTop: 50,
+  },
+  expiryText: {
+    color: theme.accent.yellow,
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
