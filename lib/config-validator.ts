@@ -17,10 +17,18 @@ const REQUIRED_CONFIGS = [
   "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
 ];
 
+// Backend URLs are required in production, optional in dev (demo mode still works)
+const BACKEND_URL_CONFIGS = [
+  "EXPO_PUBLIC_GCP3_BACKEND_URL",
+  "EXPO_PUBLIC_HOLDFOLD_BACKEND_URL",
+  "EXPO_PUBLIC_AITEXT_BACKEND_URL",
+];
+
 const OPTIONAL_CONFIGS = [
   "GOOGLE_CLIENT_SECRET",
   "CLERK_WEBHOOK_SECRET",
   "NODE_ENV",
+  ...BACKEND_URL_CONFIGS,
 ];
 
 export function validateConfig(): ValidationResult {
@@ -60,9 +68,24 @@ export function validateConfig(): ValidationResult {
   };
 }
 
+export interface BackendUrlStatus {
+  gcp3: string | null;
+  holdfold: string | null;
+  aitext: string | null;
+  allConfigured: boolean;
+}
+
+export function getBackendUrls(): BackendUrlStatus {
+  const gcp3 = process.env.EXPO_PUBLIC_GCP3_BACKEND_URL ?? null;
+  const holdfold = process.env.EXPO_PUBLIC_HOLDFOLD_BACKEND_URL ?? null;
+  const aitext = process.env.EXPO_PUBLIC_AITEXT_BACKEND_URL ?? null;
+  return { gcp3, holdfold, aitext, allConfigured: !!(gcp3 && holdfold && aitext) };
+}
+
 export function getConfigSummary(): Record<string, string | boolean> {
   const validation = validateConfig();
 
+  const backends = getBackendUrls();
   return {
     isValid: validation.isValid,
     clerkConfigured: validation.configs.find(
@@ -74,5 +97,9 @@ export function getConfigSummary(): Record<string, string | boolean> {
     webhooksConfigured:
       !!process.env.CLERK_WEBHOOK_SECRET,
     environment: process.env.NODE_ENV || "development",
+    backendsConfigured: backends.allConfigured,
+    gcp3Configured: !!backends.gcp3,
+    holdfoldConfigured: !!backends.holdfold,
+    aitextConfigured: !!backends.aitext,
   };
 }
