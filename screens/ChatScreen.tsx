@@ -154,13 +154,17 @@ export default function ChatScreen() {
   }
 
   async function requestAgreement(dualId: string) {
-    const dual = messages.find((m) => m.id === dualId);
-    if (!dual || dual.kind !== 'dual') return;
-    if (!isOk(dual.shortView) || !isOk(dual.longView)) return;
+    // Read current message state inside setState callback to avoid stale closure.
+    let dual: DualViewMessage | undefined;
+    setMessages((prev) => {
+      const found = prev.find((m) => m.id === dualId);
+      if (found?.kind === 'dual') dual = found;
+      return prev.map((m) =>
+        m.id === dualId && m.kind === 'dual' ? { ...m, agreementLoading: true } : m,
+      );
+    });
 
-    setMessages((prev) =>
-      prev.map((m) => (m.id === dualId && m.kind === 'dual' ? { ...m, agreementLoading: true } : m)),
-    );
+    if (!dual || !isOk(dual.shortView) || !isOk(dual.longView)) return;
     scrollToEnd();
 
     const prompt = buildAgreementPrompt(dual.question, dual.shortView.answer, dual.longView.answer);
