@@ -72,18 +72,40 @@ function MarketOverviewCard({ state }: { state: LoadState<MarketOverview> }) {
         <View style={styles.metricGrid}>
           <Metric label="Status" value={state.data.market_status ?? '—'} />
           {state.data.sp500 != null && (
-            <Metric label="S&P 500" value={state.data.sp500.toLocaleString()} mono />
+            <Metric label="S&P 500" value={'$' + state.data.sp500.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mono />
           )}
           {state.data.nasdaq != null && (
-            <Metric label="NASDAQ" value={state.data.nasdaq.toLocaleString()} mono />
+            <Metric label="NASDAQ" value={'$' + state.data.nasdaq.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mono />
           )}
-          {state.data.vix != null && (
-            <Metric label="VIX" value={state.data.vix.toFixed(2)} mono />
+          {state.data.dow != null && (
+            <Metric label="Dow Jones" value={'$' + state.data.dow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mono />
+          )}
+          {state.data.regime && (
+            <Metric label="Regime" value={state.data.regime} />
           )}
           {state.data.summary && <Text style={styles.summary}>{state.data.summary}</Text>}
+          {state.data.ai_brief && <Text style={[styles.summary, styles.aiBrief]}>{state.data.ai_brief}</Text>}
+          {(state.data.leading_sectors?.length ?? 0) > 0 && (
+            <SectorRow label="Leading" sectors={state.data.leading_sectors!} color={theme.accent.green} />
+          )}
+          {(state.data.lagging_sectors?.length ?? 0) > 0 && (
+            <SectorRow label="Lagging" sectors={state.data.lagging_sectors!} color={theme.accent.red} />
+          )}
+          {state.data.sentiment_summary && (
+            <Text style={[styles.summary, { marginTop: 8 }]}>{state.data.sentiment_summary}</Text>
+          )}
         </View>
       )}
     </Card>
+  );
+}
+
+function SectorRow({ label, sectors, color }: { label: string; sectors: string[]; color: string }) {
+  return (
+    <View style={styles.sectorRow}>
+      <Text style={[styles.sectorLabel, { color }]}>{label.toUpperCase()}</Text>
+      <Text style={styles.sectorList}>{sectors.join(' · ')}</Text>
+    </View>
   );
 }
 
@@ -94,11 +116,39 @@ function MacroPulseCard({ state }: { state: LoadState<MacroPulse> }) {
       {state.status === 'error' && <ErrorText message={state.message} />}
       {state.status === 'ok' && (
         <>
-          <SentimentBadge sentiment={state.data.sentiment} />
-          {state.data.score != null && (
-            <Text style={styles.scoreLine}>Score: <Text style={styles.scoreValue}>{state.data.score}</Text></Text>
-          )}
+          <View style={styles.macroHeader}>
+            <SentimentBadge sentiment={state.data.sentiment} />
+            {state.data.score != null && (
+              <Text style={styles.scoreLine}>Score: <Text style={styles.scoreValue}>{state.data.score > 0 ? '+' : ''}{state.data.score}</Text></Text>
+            )}
+          </View>
           {state.data.summary && <Text style={styles.summary}>{state.data.summary}</Text>}
+          {(state.data.signals?.length ?? 0) > 0 && (
+            <View style={styles.signalTagRow}>
+              {state.data.signals!.map((s, i) => (
+                <View key={i} style={styles.signalTag}>
+                  <Text style={styles.signalTagText}>{s}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {(state.data.indicators?.length ?? 0) > 0 && (
+            <View style={[styles.metricGrid, { marginTop: 12 }]}>
+              {state.data.indicators!.map((ind) => (
+                <Metric
+                  key={ind.ticker}
+                  label={ind.label}
+                  value={
+                    ind.price != null
+                      ? `$${ind.price.toFixed(2)}${ind.change_pct != null ? `  ${ind.change_pct > 0 ? '+' : ''}${ind.change_pct.toFixed(2)}%` : ''}`
+                      : '—'
+                  }
+                  mono
+                  changeDir={ind.change_pct != null ? (ind.change_pct > 0 ? 'up' : ind.change_pct < 0 ? 'down' : 'flat') : undefined}
+                />
+              ))}
+            </View>
+          )}
         </>
       )}
     </Card>
@@ -162,11 +212,12 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function Metric({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function Metric({ label, value, mono, changeDir }: { label: string; value: string; mono?: boolean; changeDir?: 'up' | 'down' | 'flat' }) {
+  const valueColor = changeDir === 'up' ? theme.accent.green : changeDir === 'down' ? theme.accent.red : undefined;
   return (
     <View style={styles.metric}>
       <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={[styles.metricValue, mono && styles.monoText]}>{value}</Text>
+      <Text style={[styles.metricValue, mono && styles.monoText, valueColor ? { color: valueColor } : undefined]}>{value}</Text>
     </View>
   );
 }
@@ -307,6 +358,56 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 12,
     color: theme.accent.red,
+  },
+  aiBrief: {
+    marginTop: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: theme.accent.indigo,
+    paddingLeft: 8,
+    color: theme.text.secondary,
+  },
+  sectorRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 8,
+    gap: 8,
+  },
+  sectorLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+    minWidth: 52,
+    marginTop: 1,
+  },
+  sectorList: {
+    flex: 1,
+    fontSize: 12,
+    color: theme.text.secondary,
+  },
+  macroHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 6,
+  },
+  signalTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  signalTag: {
+    backgroundColor: theme.bg.base,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: theme.accent.cyan,
+  },
+  signalTagText: {
+    fontSize: 11,
+    color: theme.accent.cyan,
+    fontWeight: '600',
   },
   councilWrap: {
     marginTop: spacing.lg,
