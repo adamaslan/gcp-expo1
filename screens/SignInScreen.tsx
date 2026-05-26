@@ -1,69 +1,86 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, Text, Pressable, ActivityIndicator } from 'react-native';
-import { useSignIn } from '@clerk/clerk-expo';
-import { useOAuth } from '@clerk/clerk-expo';
+import React, { useState, useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { useOAuth, useSignIn } from '@clerk/clerk-expo';
 import * as WebBrowser from 'expo-web-browser';
+import { theme, radius, spacing } from '../lib/ui/theme';
 
+// Required so the browser session closes correctly after OAuth on native.
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
-  const { signIn, setActive, isLoaded } = useSignIn();
   const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+  const { isLoaded } = useSignIn();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isLoaded) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={styles.loadingText}>Loading authentication...</Text>
-      </View>
-    );
-  }
-
-  const handleGoogleSignIn = async () => {
+  const signInWithGoogle = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await startOAuthFlow();
+      const result = await startOAuthFlow({
+        // Web ignores this; native uses it to deep-link back into the app.
+        redirectUrl: Platform.OS === 'web' ? undefined : 'gcp3mobile://oauth-callback',
+      });
       if (result?.createdSessionId && result?.setActive) {
         await result.setActive({ session: result.createdSessionId });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Google sign-in failed');
-      console.error('Google sign-in error:', err);
+      console.error('OAuth error:', err);
+      setError(err instanceof Error ? err.message : 'Sign-in failed. Try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [startOAuthFlow]);
+
+  if (!isLoaded) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.splash}>
+          <ActivityIndicator size="large" color={theme.accent.indigo} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Welcome</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+        <Text style={styles.brand}>GCP3</Text>
+        <Text style={styles.tagline}>Signals · Verdicts · Council</Text>
 
-        {error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
+        <View style={styles.card}>
+          <Text style={styles.heading}>Sign in</Text>
+          <Text style={styles.subheading}>
+            Your session stays active for 1 hour. After that you'll be asked to sign in again.
+          </Text>
 
-        <Pressable
-          style={[styles.button, styles.googleButton]}
-          onPress={handleGoogleSignIn}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign in with Google</Text>
+          <Pressable
+            onPress={signInWithGoogle}
+            disabled={loading}
+            style={({ pressed }) => [
+              styles.googleButton,
+              loading && styles.buttonDisabled,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#1f1f1f" />
+            ) : (
+              <>
+                <Text style={styles.googleG}>G</Text>
+                <Text style={styles.googleText}>Continue with Google</Text>
+              </>
+            )}
+          </Pressable>
+
+          {error && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
           )}
-        </Pressable>
+        </View>
 
-        <Text style={styles.demoText}>
-          Demo Mode: Use real Clerk credentials for testing
-        </Text>
+        <Text style={styles.legal}>Development build · using Clerk test keys</Text>
       </View>
     </View>
   );
@@ -72,61 +89,100 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: theme.bg.base,
+  },
+  splash: {
+    flex: 1,
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
   },
   content: {
-    width: '80%',
-    maxWidth: 400,
+    flex: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl * 2,
     alignItems: 'center',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
+  brand: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: theme.text.primary,
+    letterSpacing: 4,
+    fontFamily: theme.font.mono,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 24,
+  tagline: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 2,
+    color: theme.accent.indigo,
+    marginTop: spacing.xs,
+    textTransform: 'uppercase',
   },
-  button: {
+  card: {
     width: '100%',
-    paddingVertical: 14,
-    borderRadius: 8,
-    marginVertical: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    maxWidth: 380,
+    marginTop: spacing.xxl,
+    backgroundColor: theme.bg.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.text.primary,
+    marginBottom: spacing.sm,
+  },
+  subheading: {
+    fontSize: 12,
+    color: theme.text.secondary,
+    lineHeight: 18,
+    marginBottom: spacing.xl,
   },
   googleButton: {
-    backgroundColor: '#4285F4',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    backgroundColor: '#ffffff',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  buttonDisabled: {
+    opacity: 0.5,
   },
-  loadingText: {
-    marginTop: 12,
-    color: '#666',
+  buttonPressed: {
+    opacity: 0.8,
+  },
+  googleG: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#4285F4',
+    fontFamily: theme.font.mono,
+  },
+  googleText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1f1f1f',
+    letterSpacing: 0.3,
   },
   errorBox: {
-    backgroundColor: '#ffebee',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 16,
-    width: '100%',
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: 'rgba(244,63,94,0.1)',
+    borderColor: 'rgba(244,63,94,0.3)',
+    borderWidth: 1,
+    borderRadius: radius.md,
   },
   errorText: {
-    color: '#c62828',
-    fontSize: 14,
-  },
-  demoText: {
-    marginTop: 20,
     fontSize: 12,
-    color: '#999',
-    fontStyle: 'italic',
+    color: theme.accent.red,
+  },
+  legal: {
+    marginTop: spacing.xxl,
+    fontSize: 10,
+    color: theme.text.muted,
+    letterSpacing: 0.5,
   },
 });

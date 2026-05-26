@@ -48,8 +48,9 @@ export async function httpJson<T>(
       {
         maxAttempts: 3,
         shouldRetry: (err) => {
-          // Never retry client errors — only 5xx / network failures
-          if (err.message.includes('4')) return false;
+          // Never retry 4xx client errors — only 5xx / network failures.
+          // startsWith('HTTP 4') avoids false negatives on 504, port 443 errors, etc.
+          if (err.message.startsWith('HTTP 4')) return false;
           return true;
         },
       }
