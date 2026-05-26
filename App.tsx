@@ -49,6 +49,7 @@ function AppRoot() {
   useEffect(() => {
     if (!isSignedIn) {
       setSessionExpired(false);
+      SecureStore.deleteItemAsync(SESSION_STARTED_KEY).catch(() => {});
       return;
     }
 
