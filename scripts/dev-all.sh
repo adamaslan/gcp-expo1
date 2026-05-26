@@ -126,4 +126,4 @@ echo
 # --- Expo in foreground ---
 echo "→ Starting Expo (foreground)…"
 cd "$EXPO_PROJECT"
-exec npx expo start --clear
+npx expo start --clear

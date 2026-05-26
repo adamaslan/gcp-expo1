@@ -1,11 +1,13 @@
 ---
-date: 2026-05-22
+date: 2026-05-23
 type: decision
-tags: [architecture, backend, debt]
-sources: [../lib/api.ts, ../MULTI_BACKEND_INTEGRATION.md]
+tags: [architecture, backend, debt, validated]
+sources: [../lib/api.ts, ../lib/http.ts, ../lib/clients/, ../MULTI_BACKEND_INTEGRATION.md]
 ---
 
 # Decision: The Single `BACKEND_URL` Was Always Temporary
+
+> ✅ **Validated 2026-05-23.** Executed by PR #5 ([feat(infra): multi-backend client architecture](https://github.com/adamaslan/gcp-expo1/pull/5)). The refactor shipped without breaking existing callers because `lib/api.ts` was kept as a shim. See [[entity-backend-client]] and [[entity-http]].
 
 ## Decision
 
@@ -44,9 +46,12 @@ The mobile app was bootstrapped against the gcp3 FastAPI backend. At that time t
 
 ## Validated by
 
-Not yet — the refactor hasn't shipped. Will be validated when:
-- A gcp3 outage no longer breaks Hold/Fold (proves per-backend circuit breakers work)
-- The wiki page [[concept-single-backend-assumption]] can be archived (proves the debt is paid)
+- PR #5 merged 2026-05-23 — introduced `lib/http.ts` and `lib/clients/{gcp3,holdfold,aitext}.ts`. The shim at `lib/api.ts` preserves the `fetchBackend` API, so no existing screen broke during the migration. See diff in [entity-backend-client#current-shape-post-pr-5](entity-backend-client.md#current-shape-post-pr-5).
+- [[concept-single-backend-assumption]] now carries a `✅ Resolved` banner — kept as historical context per the archive-not-delete policy ([[concept-archive-not-delete]]).
+
+Still open (these were originally listed under "Risks during migration" and are now their own follow-ups):
+- Per-backend circuit breakers are not yet wired. Today `lib/http.ts` retries with `withRetry`, but the breaker is per-call. A gcp3 outage doesn't yet protect holdfold/ai-text the way [[../MULTI_BACKEND_INTEGRATION.md]] Step 7 envisioned.
+- Type generation from each backend's OpenAPI (`npm run gen:types`) is wired in [package.json](../../package.json) but not yet run; clients still use hand-rolled types. See [[decision-no-handrolled-types]].
 
 ## See also
 

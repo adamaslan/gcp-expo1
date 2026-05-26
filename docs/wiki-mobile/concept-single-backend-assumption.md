@@ -1,11 +1,17 @@
 ---
-date: 2026-05-22
+date: 2026-05-23
 type: concept
-tags: [architecture, debt, mobile]
-sources: [../lib/api.ts, ../MULTI_BACKEND_INTEGRATION.md]
+tags: [architecture, debt, mobile, resolved]
+sources: [../lib/api.ts, ../lib/http.ts, ../lib/clients/, ../MULTI_BACKEND_INTEGRATION.md]
 ---
 
 # Concept: The Single-Backend Assumption
+
+> ✅ **Resolved 2026-05-23 by PR #5** ([feat(infra): multi-backend client architecture](https://github.com/adamaslan/gcp-expo1/pull/5)). The debt is paid: `lib/http.ts` exists, `lib/clients/{gcp3,holdfold,aitext,council}.ts` exist, three env vars are wired through [[entity-config-validator]], and [[entity-backend-client]] is a thin shim for legacy callers. This page is kept for historical context — DO NOT use it to reason about current architecture; see [[entity-backend-client]] and [[entity-http]] for what's true today.
+
+---
+
+## Original concept (pre-PR-#5, kept for context)
 
 The mobile app was built as if it talked to one server. The codebase still reflects that — one env var, one base URL, one client. In reality the app needs to call three independent services (gcp3, holdemfoldem, ai-text-opt), each owned by a different repo, each deployed independently. The gap between "one host" and "three hosts" is the central architectural debt this wiki tracks.
 
@@ -20,12 +26,12 @@ A "single-backend assumption" is any code that:
 
 Each of those is fine when there is one backend. Each becomes a bug when there are three: a holdemfoldem outage looks like a gcp3 outage to the circuit breaker; a new endpoint added to ai-text needs an env var that doesn't exist; a Clerk-authenticated route on one backend forces all backends to need auth.
 
-## Where it appears
+## Where it appears (historical — now resolved)
 
-- [[entity-backend-client]] — the canonical example. `BACKEND_URL` at [`lib/api.ts:5`](../lib/api.ts#L5) is one constant for one host.
-- [[entity-config-validator]] — doesn't check any backend URL at all, so the single-host assumption hides behind a silent default to `http://localhost:3000`.
-- [[entity-resilience-layer]] — circuit breaker is per-call today, but the *intent* (per [[../MULTI_BACKEND_INTEGRATION.md]] Step 7) is per-backend. Same word, different scope.
-- [[entity-monitoring]] — event shape has no `backend` tag yet; once three clients exist, untagged events are unattributable.
+- ~~[[entity-backend-client]]~~ — was the canonical example. `lib/api.ts` is now a shim over [[entity-http]] with proper per-backend resolution.
+- ~~[[entity-config-validator]]~~ — now exposes a `BACKEND_URL_CONFIGS` list with all three env vars; see [[entity-config-validator#backend-urls]].
+- [[entity-resilience-layer]] — circuit breaker scope was never split per-backend (still per-call). The follow-up work is to attribute retries to a specific backend in [[entity-monitoring]] events. Still open.
+- [[entity-monitoring]] — events now include the hostname in the metric name (e.g. `http:localhost:8081:/api/analyze`) so retries ARE attributable to a backend. But the structured tag-shape is implicit, not explicit. Worth tightening.
 
 ## Contradictions / tensions
 
