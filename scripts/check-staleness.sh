@@ -120,7 +120,9 @@ fi
 
 echo
 echo "→ Checking Cloud Scheduler job '$SCHEDULER_JOB' for ?skip_gemini=true"
-midday_uri=$(timeout 8 gcloud scheduler jobs describe "$SCHEDULER_JOB" \
+# Note: no `timeout` wrapper — that's GNU coreutils (unavailable on macOS without Homebrew).
+# gcloud has its own internal timeout; on auth failure we already exited above.
+midday_uri=$(gcloud scheduler jobs describe "$SCHEDULER_JOB" \
   --location="$GCP_LOCATION" --project="$GCP_PROJECT" \
   --format="value(httpTarget.uri)" 2>/dev/null || echo "")
 
@@ -141,9 +143,13 @@ else
   base_uri="${midday_uri%%\?*}"
   fixed_uri="${base_uri}?skip_gemini=true"
 
-  if [[ "$NON_INTERACTIVE" == "1" ]]; then
-    echo "${C_DIM}NON_INTERACTIVE=1 set — not applying fix${C_RST}"
-  else
+  # Determine if we can prompt: requires NON_INTERACTIVE=0 AND /dev/tty accessible
+  can_prompt=0
+  if [[ "$NON_INTERACTIVE" != "1" ]] && [[ -c /dev/tty ]]; then
+    can_prompt=1
+  fi
+
+  if [[ "$can_prompt" == "1" ]]; then
     echo
     echo "Proposed fix:"
     echo "  gcloud scheduler jobs update http $SCHEDULER_JOB \\"
@@ -162,6 +168,10 @@ else
     else
       echo "${C_DIM}…skipped. Apply manually when ready.${C_RST}"
     fi
+  else
+    echo "${C_DIM}Non-interactive environment — skipping auto-fix prompt.${C_RST}"
+    echo "  To fix manually: gcloud scheduler jobs update http $SCHEDULER_JOB \\"
+    echo "    --location=$GCP_LOCATION --project=$GCP_PROJECT --uri=\"$fixed_uri\""
   fi
 fi
 
