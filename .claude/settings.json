@@ -38,7 +38,38 @@
       "Bash(curl -s --max-time 5 http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d '{\"message\":\"hello\",\"trader_filter\":null}')",
       "Bash(lsof -ti:3002)",
       "Bash(curl -s -o /dev/null -w \"iOS HTTP %{http_code}\\\\n\" \"http://localhost:8081/index.bundle?platform=ios&dev=true&minify=false\" --max-time 90)",
-      "Bash(git ls-files *)"
+      "Bash(git ls-files *)",
+      "Bash(curl -s --max-time 5 https://gcp3-backend-1007181159506.us-central1.run.app/health)",
+      "Bash(curl -s --max-time 8 https://gcp3-backend-1007181159506.us-central1.run.app/market-overview)",
+      "Bash(curl -s --max-time 8 https://gcp3-backend-1007181159506.us-central1.run.app/macro-pulse)",
+      "Bash(curl -s --max-time 8 https://gcp3-backend-1007181159506.us-central1.run.app/signals)",
+      "Bash(grep \"\\.md$\")",
+      "Bash(chmod +x /Users/adamaslan/code/gcp3-mobile/scripts/check-staleness.sh)",
+      "Bash(chmod +x scripts/check-staleness.sh)",
+      "Bash(/Users/adamaslan/code/gcp3-mobile/scripts/check-staleness.sh)",
+      "Bash(./scripts/check-staleness.sh)",
+      "Bash(curl -s --max-time 5 https://gcp3-backend-1007181159506.us-central1.run.app/debug/status)",
+      "Bash(gcloud auth print-access-token)",
+      "Bash(gcloud config get-value project)",
+      "Bash(gcloud scheduler jobs describe gcp3-midday-intraday-refresh --location=us-central1 --project=ttb-lang1 --format=*)",
+      "Bash(gcloud scheduler jobs describe gcp3-* --location=us-central1 --project=ttb-lang1 *)",
+      "Bash(gcloud scheduler jobs update http gcp3-midday-intraday-refresh --location=us-central1 --project=ttb-lang1 --uri=*)",
+      "Bash(gcloud scheduler jobs update http gcp3-* --location=us-central1 --project=ttb-lang1 *)",
+      "Bash(gcloud scheduler jobs list --location=us-central1 --project=ttb-lang1)",
+      "Bash(timeout 8 gcloud scheduler jobs describe *)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "root=$(git rev-parse --show-toplevel 2>/dev/null); script=\"$root/scripts/wiki-staleness-check.sh\"; [ -x \"$script\" ] || exit 0; out=$(timeout 8 \"$script\" 2>/dev/null); [ -n \"$out\" ] && printf '%s' \"$out\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"Stop\",additionalContext:.}}'",
+            "timeout": 12
+          }
+        ]
+      }
     ]
   }
 }
