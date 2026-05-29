@@ -57,7 +57,7 @@ export default function BriefingScreen() {
       <SignalsCard state={signalsState} />
 
       <View style={styles.councilWrap}>
-        <CouncilPanel prompt={councilPrompt} label="Ask the Council" traderFilter="long_term" />
+        <CouncilPanel prompt={councilPrompt} label="Ask the Council" traderFilter="T2" />
       </View>
     </ScrollView>
   );

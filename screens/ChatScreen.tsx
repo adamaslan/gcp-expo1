@@ -90,7 +90,7 @@ export default function ChatScreen() {
   async function sendSingle(text: string, view: ViewKey) {
     const prompt = view === 'short_term' ? buildShortTermChat(text) : buildLongTermChat(text);
     try {
-      const res = await ragChat({ message: prompt, trader_filter: view });
+      const res = await ragChat({ message: prompt, trader_filter: view === 'short_term' ? 'T1' : 'T2' });
       setMessages((prev) => [
         ...prev,
         {
@@ -133,8 +133,8 @@ export default function ChatScreen() {
     const longPrompt = buildLongTermChat(text);
 
     const [shortRes, longRes] = await Promise.allSettled([
-      ragChat({ message: shortPrompt, trader_filter: 'short_term' }),
-      ragChat({ message: longPrompt, trader_filter: 'long_term' }),
+      ragChat({ message: shortPrompt, trader_filter: 'T1' }),
+      ragChat({ message: longPrompt, trader_filter: 'T2' }),
     ]);
 
     const shortView: DualViewMessage['shortView'] =

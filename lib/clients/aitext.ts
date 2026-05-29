@@ -13,9 +13,11 @@ const BASE_URL =
 
 // --- Chat / RAG types (matches the contract consumed by holdemfoldemapp AiCouncilCommentary) ---
 
+export type TraderFilterValue = 'T1' | 'T2' | null;
+
 export interface ChatRequest {
   message: string;
-  trader_filter?: string | null;
+  trader_filter?: TraderFilterValue;
 }
 
 export interface CouncilSource {

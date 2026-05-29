@@ -167,7 +167,7 @@ function VerdictDisplay({ verdict }: { verdict: HoldFoldVerdict }) {
           </View>
         )}
 
-        <CouncilPanel prompt={prompt} label="Ask the Council" traderFilter="short_term" />
+        <CouncilPanel prompt={prompt} label="Ask the Council" traderFilter="T1" />
       </View>
     </>
   );
