@@ -12,9 +12,12 @@ export type TraderIdentity = 'short_term' | 'long_term';
 
 // Maps the app's internal identity names to the ChromaDB metadata values
 // the ai-text backend accepts ("T1" | "T2" | null).
+// Also passes T1/T2 through directly so callers that already hold the
+// wire value (e.g. CouncilPanel after receiving a TraderFilterValue prop)
+// don't get downgraded to null.
 function toTraderFilter(identity: string | null | undefined): TraderFilterValue {
-  if (identity === 'short_term') return 'T1';
-  if (identity === 'long_term') return 'T2';
+  if (identity === 'T1' || identity === 'short_term') return 'T1';
+  if (identity === 'T2' || identity === 'long_term') return 'T2';
   return null;
 }
 

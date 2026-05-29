@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ragChat, type ChatResponse, type CouncilSource } from '../lib/clients/aitext';
 import {
   buildShortTermChat,
@@ -55,9 +56,10 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | ViewKey>('all');
   const scrollRef = useRef<ScrollView | null>(null);
+  const insets = useSafeAreaInsets();
 
   function scrollToEnd() {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+    scrollRef.current?.scrollToEnd({ animated: true });
   }
 
   async function send() {
@@ -196,7 +198,7 @@ export default function ChatScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.bottom + 49 : 0}
     >
       <View style={styles.header}>
         <Text style={styles.eyebrow}>RAG · GEMINI</Text>
@@ -222,6 +224,7 @@ export default function ChatScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
         {messages.length === 0 && <EmptyState filter={filter} />}
         {messages.map((m) => {
