@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { askCouncil } from '../lib/clients/council';
-import type { ChatResponse, CouncilSource } from '../lib/clients/aitext';
+import type { ChatResponse, CouncilSource, TraderFilterValue } from '../lib/clients/aitext';
 import { theme, radius, spacing } from '../lib/ui/theme';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
   // Passing null disables the panel (e.g. data not yet loaded).
   prompt: string | null;
   label?: string;
-  traderFilter?: string | null;
+  traderFilter?: TraderFilterValue;
 }
 
 export default function CouncilPanel({ prompt, label = 'Ask the Council', traderFilter }: Props) {

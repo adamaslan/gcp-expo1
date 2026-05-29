@@ -21,10 +21,12 @@ type LoadState<T> =
 function useFetch<T>(fetcher: () => Promise<T>): LoadState<T> {
   const [state, setState] = useState<LoadState<T>>({ status: 'loading' });
   useEffect(() => {
+    let active = true;
     setState({ status: 'loading' });
     fetcher()
-      .then((data) => setState({ status: 'ok', data }))
-      .catch((err) => setState({ status: 'error', message: err instanceof Error ? err.message : String(err) }));
+      .then((data) => { if (active) setState({ status: 'ok', data }); })
+      .catch((err) => { if (active) setState({ status: 'error', message: err instanceof Error ? err.message : String(err) }); });
+    return () => { active = false; };
   }, []);
   return state;
 }
@@ -57,7 +59,7 @@ export default function BriefingScreen() {
       <SignalsCard state={signalsState} />
 
       <View style={styles.councilWrap}>
-        <CouncilPanel prompt={councilPrompt} label="Ask the Council" traderFilter="long_term" />
+        <CouncilPanel prompt={councilPrompt} label="Ask the Council" traderFilter="T2" />
       </View>
     </ScrollView>
   );

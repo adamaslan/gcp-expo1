@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Text, ActivityIndicator, SafeAreaView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { AuthProvider } from './lib/auth-provider';
 import * as SecureStore from './lib/secure-storage';
@@ -43,12 +44,14 @@ function AppRoot() {
   const { isLoaded, isSignedIn, signOut } = useAuth();
   const [tab, setTab] = useState<TabKey>('briefing');
   const [sessionExpired, setSessionExpired] = useState(false);
+  const insets = useSafeAreaInsets();
 
   // Track sign-in timestamp and enforce a 1-hour hard cap. Defense-in-depth
   // alongside Clerk Dashboard session-lifetime config (see PRODUCTION_CLERK.md).
   useEffect(() => {
     if (!isSignedIn) {
       setSessionExpired(false);
+      SecureStore.deleteItemAsync(SESSION_STARTED_KEY).catch(() => {});
       return;
     }
 
@@ -100,7 +103,7 @@ function AppRoot() {
     return (
       <View style={styles.shell}>
         {sessionExpired && (
-          <View style={styles.expiryBanner}>
+          <View style={[styles.expiryBanner, { paddingTop: insets.top + 12 }]}>
             <Text style={styles.expiryText}>Session expired after 1 hour — please sign in again.</Text>
           </View>
         )}
@@ -166,7 +169,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(251,191,36,0.3)',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingTop: 50,
   },
   expiryText: {
     color: theme.accent.yellow,
