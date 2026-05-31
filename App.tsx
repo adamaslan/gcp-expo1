@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Text, ActivityIndicator, SafeAreaView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { AuthProvider } from './lib/auth-provider';
 import * as SecureStore from './lib/secure-storage';
@@ -128,11 +128,13 @@ function AppRoot() {
 
 export default function App() {
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <AuthProvider>
-        <AppRoot />
-      </AuthProvider>
-    </ClerkProvider>
+    <SafeAreaProvider>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <AuthProvider>
+          <AppRoot />
+        </AuthProvider>
+      </ClerkProvider>
+    </SafeAreaProvider>
   );
 }
 
