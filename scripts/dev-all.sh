@@ -26,7 +26,7 @@ LOG_DIR="/tmp/gcp3-mobile-dev"
 mkdir -p "$LOG_DIR"
 
 # Ports we own
-PORTS=(8080 8081 8000 8001 3002)
+PORTS=(8080 8081 8000 8001 3002 8082)
 
 # --- Child PIDs for trap cleanup ---
 PIDS=()
@@ -71,24 +71,28 @@ start_proc() {
   echo "   pid=$pid  log=$logfile"
 }
 
+# Conda env bin paths (avoids needing `mamba activate` in a non-interactive shell)
+FIN_CORE="/opt/homebrew/Caskroom/miniforge/base/envs/fin-core/bin"
+FIN_AI1="/opt/homebrew/Caskroom/miniforge/base/envs/fin-ai1/bin"
+
 # --- gcp3 (FastAPI on 8080) ---
 start_proc "gcp3" "$GCP3_BACKEND" \
-  "uvicorn main:app --host 0.0.0.0 --port 8080 --reload"
+  "$FIN_CORE/uvicorn main:app --host 0.0.0.0 --port 8080 --reload"
 
 # --- holdfold (FastAPI on 8081) ---
 start_proc "holdfold" "$HOLDFOLD_BACKEND" \
-  "uvicorn main:app --host 0.0.0.0 --port 8081 --reload"
+  "$FIN_AI1/uvicorn main:app --host 0.0.0.0 --port 8081 --reload"
 
 # --- ai-text stack: 3 processes ---
 #  (a) ChromaDB local server on 8000 — only when CHROMA_MODE=local (the default per .env.example)
 start_proc "chromadb" "$AITEXT_ROOT" \
-  "chroma run --path chroma_db --port 8000"
+  "$FIN_AI1/chroma run --path chroma_db --port 8000"
 
 #  (b) Embed service on 127.0.0.1:8001 — loads the 1.47 GB embedding model.
 #      Slow first start; subsequent starts are cached. The mobile /api/chat
 #      call will hang until this is ready.
 start_proc "aitext-embed" "$AITEXT_ROOT" \
-  "uvicorn embed_service:app --host 127.0.0.1 --port 8001 --log-level warning"
+  "$FIN_AI1/uvicorn embed_service:app --host 127.0.0.1 --port 8001 --log-level warning"
 
 #  (c) Next.js backend on 3002 (we override the default 3001 to avoid colliding
 #      with the holdfold frontend if you ever run it).
@@ -101,7 +105,7 @@ echo "→ Waiting up to 30s for backends to come up (embed service may take long
 for i in {1..30}; do
   gcp3_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8080/health 2>/dev/null || echo "000")
   hf_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8081/health 2>/dev/null || echo "000")
-  ch_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8000/api/v1/heartbeat 2>/dev/null || echo "000")
+  ch_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8000/api/v2/heartbeat 2>/dev/null || echo "000")
   emb_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8001/health 2>/dev/null || echo "000")
   at_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:3002/api/health 2>/dev/null || echo "000")
   printf "\r   gcp3:%s  hf:%s  chroma:%s  embed:%s  aitext:%s  (%ds)" \
@@ -123,7 +127,18 @@ echo "   ai-text       http://localhost:3002/api/health [$at_ok]"
 echo "   logs in:      $LOG_DIR"
 echo
 
+# --- Staleness check against deployed gcp3 backend (best-effort) ---
+# Mirrors gcp3's data-freshness checks from
+# ~/code/gcp3/docs/wiki-gcp3/incident-2026-04-24-blog-stale-2days.md
+# Set DEV_SKIP_STALENESS=1 to skip (e.g. when offline).
+if [[ "${DEV_SKIP_STALENESS:-0}" != "1" ]]; then
+  STALENESS_SCRIPT="$EXPO_PROJECT/scripts/check-staleness.sh"
+  if [[ -x "$STALENESS_SCRIPT" ]]; then
+    "$STALENESS_SCRIPT" || true
+  fi
+fi
+
 # --- Expo in foreground ---
 echo "→ Starting Expo (foreground)…"
 cd "$EXPO_PROJECT"
-npx expo start --clear
+npx expo start --clear --port 8082
