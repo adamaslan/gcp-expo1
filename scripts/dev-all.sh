@@ -71,28 +71,31 @@ start_proc() {
   echo "   pid=$pid  log=$logfile"
 }
 
-# Conda env bin paths (avoids needing `mamba activate` in a non-interactive shell)
-FIN_CORE="/opt/homebrew/Caskroom/miniforge/base/envs/fin-core/bin"
-FIN_AI1="/opt/homebrew/Caskroom/miniforge/base/envs/fin-ai1/bin"
+# Conda env bin paths — configurable so other devs can override via env vars.
+# Falls back to empty string (system PATH) if the directory doesn't exist.
+_FIN_CORE_DIR="${FIN_CORE_DIR:-/opt/homebrew/Caskroom/miniforge/base/envs/fin-core/bin}"
+_FIN_AI1_DIR="${FIN_AI1_DIR:-/opt/homebrew/Caskroom/miniforge/base/envs/fin-ai1/bin}"
+FIN_CORE=$([[ -d "$_FIN_CORE_DIR" ]] && echo "$_FIN_CORE_DIR/" || echo "")
+FIN_AI1=$([[ -d "$_FIN_AI1_DIR" ]] && echo "$_FIN_AI1_DIR/" || echo "")
 
 # --- gcp3 (FastAPI on 8080) ---
 start_proc "gcp3" "$GCP3_BACKEND" \
-  "$FIN_CORE/uvicorn main:app --host 0.0.0.0 --port 8080 --reload"
+  "${FIN_CORE}uvicorn main:app --host 0.0.0.0 --port 8080 --reload"
 
 # --- holdfold (FastAPI on 8081) ---
 start_proc "holdfold" "$HOLDFOLD_BACKEND" \
-  "$FIN_AI1/uvicorn main:app --host 0.0.0.0 --port 8081 --reload"
+  "${FIN_AI1}uvicorn main:app --host 0.0.0.0 --port 8081 --reload"
 
 # --- ai-text stack: 3 processes ---
 #  (a) ChromaDB local server on 8000 — only when CHROMA_MODE=local (the default per .env.example)
 start_proc "chromadb" "$AITEXT_ROOT" \
-  "$FIN_AI1/chroma run --path chroma_db --port 8000"
+  "${FIN_AI1}chroma run --path chroma_db --port 8000"
 
 #  (b) Embed service on 127.0.0.1:8001 — loads the 1.47 GB embedding model.
 #      Slow first start; subsequent starts are cached. The mobile /api/chat
 #      call will hang until this is ready.
 start_proc "aitext-embed" "$AITEXT_ROOT" \
-  "$FIN_AI1/uvicorn embed_service:app --host 127.0.0.1 --port 8001 --log-level warning"
+  "${FIN_AI1}uvicorn embed_service:app --host 127.0.0.1 --port 8001 --log-level warning"
 
 #  (c) Next.js backend on 3002 (we override the default 3001 to avoid colliding
 #      with the holdfold frontend if you ever run it).
@@ -105,7 +108,7 @@ echo "→ Waiting up to 30s for backends to come up (embed service may take long
 for i in {1..30}; do
   gcp3_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8080/health 2>/dev/null || echo "000")
   hf_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8081/health 2>/dev/null || echo "000")
-  ch_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8000/api/v2/heartbeat 2>/dev/null || echo "000")
+  ch_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8000/api/v1/heartbeat 2>/dev/null || echo "000")
   emb_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:8001/health 2>/dev/null || echo "000")
   at_ok=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 http://localhost:3002/api/health 2>/dev/null || echo "000")
   printf "\r   gcp3:%s  hf:%s  chroma:%s  embed:%s  aitext:%s  (%ds)" \

@@ -66,7 +66,6 @@ database.yml
 *.swo
 *~
 .env.local.json
-.claude/settings.local.json
 
 # ============================================================================
 # BUILD AND DEPENDENCIES
@@ -120,10 +119,10 @@ docs/**/.DS_Store
 # CLAUDE CODE
 # ============================================================================
 
-# Claude Code local settings and state
-.claude/
-!.claude/commands/
-!.claude/CLAUDE.md
+# Claude Code local settings and state — ignore only the per-machine files,
+# not the whole directory (a parent ignore blocks all child negations in git).
+.claude/settings.json
+.claude/settings.local.json
 
 # ============================================================================
 # DEPLOYMENT AND RUNTIME
