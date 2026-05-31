@@ -26,7 +26,7 @@ LOG_DIR="/tmp/gcp3-mobile-dev"
 mkdir -p "$LOG_DIR"
 
 # Ports we own
-PORTS=(8080 8081 8000 8001 3002)
+PORTS=(8080 8081 8000 8001 3002 8082)
 
 # --- Child PIDs for trap cleanup ---
 PIDS=()
@@ -141,4 +141,4 @@ fi
 # --- Expo in foreground ---
 echo "→ Starting Expo (foreground)…"
 cd "$EXPO_PROJECT"
-npx expo start --clear
+npx expo start --clear --port 8082
