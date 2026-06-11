@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const currentStatus = session?.status ?? null;
     const prev = prevSessionStatus.current;
 
-    if (prev === 'active' && currentStatus !== 'active' && currentStatus !== null) {
+    if (prev === 'active' && currentStatus !== 'active') {
       SecureStore.deleteItemAsync(SESSION_CACHE_KEY).catch(() => {});
       SecureStore.deleteItemAsync(TOKEN_CACHE_KEY).catch(() => {});
       setSessionToken(null);

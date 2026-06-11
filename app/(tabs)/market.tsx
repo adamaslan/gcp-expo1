@@ -1,1 +1,1 @@
-export { default } from '@/screens/HoldFoldScreen';
+export { default } from '@/screens/HomeScreen';

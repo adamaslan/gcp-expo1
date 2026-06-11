@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSignIn } from '@clerk/clerk-expo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -31,8 +31,13 @@ export default function SignIn2FAScreen() {
 
   // Guard against cold reload: signIn is null when the 2FA screen is
   // opened directly without completing step 1 in the same React tree.
-  if (isLoaded && !signIn) {
-    router.replace('/sign-in');
+  useEffect(() => {
+    if (isLoaded && !signIn) {
+      router.replace('/sign-in');
+    }
+  }, [isLoaded, signIn, router]);
+
+  if (!isLoaded || !signIn) {
     return null;
   }
 
