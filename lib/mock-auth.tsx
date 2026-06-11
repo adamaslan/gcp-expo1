@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 
 interface MockUser {
   id: string;
@@ -38,6 +39,11 @@ const MOCK_USER: MockUser = {
 };
 
 export function MockAuthProvider({ children }: { children: React.ReactNode }) {
+  // Demo mode must be explicitly enabled — never active in production builds.
+  if (process.env.EXPO_PUBLIC_DEMO_MODE !== 'true') {
+    throw new Error('MockAuthProvider must not be used outside of EXPO_PUBLIC_DEMO_MODE=true');
+  }
+
   const [isSignedIn, setIsSignedIn] = useState(true);
   const [user, setUser] = useState<MockUser | null>(MOCK_USER);
 
@@ -67,7 +73,25 @@ export function MockAuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <MockAuthContext.Provider value={value}>
+      <View style={styles.demoBanner}>
+        <Text style={styles.demoBannerText}>DEMO MODE — not a real session</Text>
+      </View>
       {children}
     </MockAuthContext.Provider>
   );
 }
+
+const styles = StyleSheet.create({
+  demoBanner: {
+    backgroundColor: '#7c3aed',
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  demoBannerText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+});

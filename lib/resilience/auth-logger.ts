@@ -1,8 +1,10 @@
+import * as SecureStore from 'expo-secure-store';
+
 enum LogLevel {
-  DEBUG = "debug",
-  INFO = "info",
-  WARN = "warn",
-  ERROR = "error",
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARN = 'warn',
+  ERROR = 'error',
 }
 
 interface LogEntry {
@@ -13,6 +15,9 @@ interface LogEntry {
   metadata?: Record<string, unknown>;
   error?: string;
 }
+
+const PERSISTED_LOG_KEY = 'auth_error_log_v1';
+const MAX_PERSISTED_ENTRIES = 20;
 
 class AuthLogger {
   private logs: LogEntry[] = [];
@@ -64,7 +69,7 @@ class AuthLogger {
       level,
       action,
       message,
-      metadata: redactedMetadata,
+      metadata: redactedMetadata as Record<string, unknown> | undefined,
       error: error?.message,
     };
 
@@ -75,6 +80,41 @@ class AuthLogger {
     }
 
     console.log(`[${level.toUpperCase()}] ${action}: ${message}`, redactedMetadata);
+
+    if (level === LogLevel.ERROR) {
+      this.flushErrorToStore(entry).catch(() => {});
+    }
+  }
+
+  private async flushErrorToStore(entry: LogEntry): Promise<void> {
+    try {
+      const raw = await SecureStore.getItemAsync(PERSISTED_LOG_KEY);
+      const existing: LogEntry[] = raw ? JSON.parse(raw) : [];
+      const updated = [...existing, entry].slice(-MAX_PERSISTED_ENTRIES);
+      await SecureStore.setItemAsync(PERSISTED_LOG_KEY, JSON.stringify(updated));
+    } catch {
+      // Best-effort
+    }
+  }
+
+  async flushPersistedLogsToBackend(backendUrl: string): Promise<void> {
+    try {
+      const raw = await SecureStore.getItemAsync(PERSISTED_LOG_KEY);
+      if (!raw) return;
+
+      const entries: LogEntry[] = JSON.parse(raw);
+      if (entries.length === 0) return;
+
+      await fetch(`${backendUrl}/api/auth-events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ events: entries }),
+      });
+
+      await SecureStore.deleteItemAsync(PERSISTED_LOG_KEY);
+    } catch {
+      // Non-critical — logs stay in store for next startup
+    }
   }
 
   debug(action: string, message: string, metadata?: Record<string, unknown>) {

@@ -1,33 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { useSignIn } from '@clerk/clerk-expo';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSignIn, useOAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { View, StyleSheet, Text, TextInput, Pressable, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
+import { theme, radius, spacing } from '@/lib/ui/theme';
 import { signInLimiter } from '@/lib/resilience/rate-limiter';
 import { authLogger } from '@/lib/resilience/auth-logger';
 import { withRetry } from '@/lib/resilience/network-resilience';
+import { SESSION_CACHE_KEY, SESSION_TTL_MS } from '@/lib/auth-constants';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const MAX_RETRIES = 3;
-const OFFLINE_MODE_KEY = 'offline_auth_session';
-const SESSION_TIMEOUT_MS = 5 * 60 * 1000;
 
 interface SignInState {
   email: string;
   password: string;
   error: string;
   loading: boolean;
+  oauthLoading: boolean;
 }
 
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
+  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
   const router = useRouter();
   const [state, setState] = useState<SignInState>({
     email: '',
     password: '',
     error: '',
     loading: false,
+    oauthLoading: false,
   });
-  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     checkCachedSession();
@@ -35,37 +50,26 @@ export default function SignInScreen() {
 
   async function checkCachedSession() {
     try {
-      const cachedSession = await SecureStore.getItemAsync(OFFLINE_MODE_KEY);
-      if (cachedSession) {
-        const parsedSession = JSON.parse(cachedSession);
-        const isValid = Date.now() - parsedSession.timestamp < SESSION_TIMEOUT_MS;
-        if (isValid) {
+      const cached = await SecureStore.getItemAsync(SESSION_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.timestamp < SESSION_TTL_MS) {
           router.replace('/(tabs)');
         } else {
-          await SecureStore.deleteItemAsync(OFFLINE_MODE_KEY);
+          await SecureStore.deleteItemAsync(SESSION_CACHE_KEY);
         }
       }
-    } catch (err) {
-      console.log('Cache check failed:', err);
+    } catch {
+      // cache miss is fine
     }
   }
 
-  const isValidEmail = (email: string): boolean => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const isValidPassword = (password: string): boolean => {
-    return password.length >= 6;
-  };
-
   async function cacheSession(sessionId: string) {
     try {
-      const sessionData = JSON.stringify({
-        sessionId,
-        timestamp: Date.now(),
-        email: state.email,
-      });
-      await SecureStore.setItemAsync(OFFLINE_MODE_KEY, sessionData);
+      await SecureStore.setItemAsync(
+        SESSION_CACHE_KEY,
+        JSON.stringify({ sessionId, timestamp: Date.now(), email: state.email })
+      );
     } catch (err) {
       console.warn('Failed to cache session:', err);
     }
@@ -74,23 +78,18 @@ export default function SignInScreen() {
   async function handleSignIn() {
     if (!isLoaded) return;
 
-    // Validation
     if (!state.email.trim() || !state.password.trim()) {
       setState(prev => ({ ...prev, error: 'Please enter email and password' }));
       return;
     }
-
-    if (!isValidEmail(state.email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email)) {
       setState(prev => ({ ...prev, error: 'Invalid email address' }));
       return;
     }
-
-    if (!isValidPassword(state.password)) {
+    if (state.password.length < 6) {
       setState(prev => ({ ...prev, error: 'Password must be at least 6 characters' }));
       return;
     }
-
-    // Rate limiting
     if (signInLimiter.isRateLimited(state.email)) {
       const remaining = signInLimiter.getRemainingAttempts(state.email);
       authLogger.warn('signin_rate_limited', 'Rate limit exceeded', { email: state.email, remaining });
@@ -99,14 +98,12 @@ export default function SignInScreen() {
     }
 
     setState(prev => ({ ...prev, error: '', loading: true }));
-    setRetryCount(0);
     authLogger.info('signin_start', 'Sign-in attempt', { email: state.email });
 
     try {
       await withRetry(
         async () => {
           const result = await signIn.create({ identifier: state.email, password: state.password });
-
           if (result.status === 'complete') {
             await setActive({ session: result.createdSessionId });
             await cacheSession(result.createdSessionId);
@@ -130,122 +127,263 @@ export default function SignInScreen() {
     }
   }
 
+  const handleGoogleSignIn = useCallback(async () => {
+    setState(prev => ({ ...prev, error: '', oauthLoading: true }));
+    try {
+      const result = await startOAuthFlow({
+        redirectUrl: Platform.OS === 'web' ? undefined : 'nuwrrrld://oauth-callback',
+      });
+      if (result?.createdSessionId && result?.setActive) {
+        await result.setActive({ session: result.createdSessionId });
+      }
+    } catch (err) {
+      setState(prev => ({
+        ...prev,
+        error: err instanceof Error ? err.message : 'Google sign-in failed',
+      }));
+    } finally {
+      setState(prev => ({ ...prev, oauthLoading: false }));
+    }
+  }, [startOAuthFlow]);
+
+  if (!isLoaded) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={theme.accent.indigo} />
+      </View>
+    );
+  }
+
+  const busy = state.loading || state.oauthLoading;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Sign In</Text>
-        <Text style={styles.subtitle}>Enter your credentials</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <Text style={styles.brand}>NuWrrrld Financial</Text>
+        <Text style={styles.tagline}>Markets · Signals · Intelligence</Text>
 
-        {state.error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{state.error}</Text>
+        <View style={styles.card}>
+          <Text style={styles.heading}>Sign in</Text>
+          <Text style={styles.subheading}>
+            Your session stays active for 1 hour.
+          </Text>
+
+          {state.error ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{state.error}</Text>
+            </View>
+          ) : null}
+
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={theme.text.muted}
+            value={state.email}
+            onChangeText={email => setState(prev => ({ ...prev, email }))}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!busy}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor={theme.text.muted}
+            value={state.password}
+            onChangeText={password => setState(prev => ({ ...prev, password }))}
+            secureTextEntry
+            editable={!busy}
+          />
+
+          <Pressable
+            style={({ pressed }) => [styles.primaryButton, busy && styles.buttonDisabled, pressed && styles.buttonPressed]}
+            onPress={handleSignIn}
+            disabled={busy}
+          >
+            {state.loading ? (
+              <ActivityIndicator size="small" color={theme.text.inverse} />
+            ) : (
+              <Text style={styles.primaryButtonText}>Sign In</Text>
+            )}
+          </Pressable>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
           </View>
-        )}
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#999"
-          value={state.email}
-          onChangeText={(email) => setState(prev => ({ ...prev, email }))}
-          editable={!state.loading}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+          <Pressable
+            style={({ pressed }) => [styles.googleButton, busy && styles.buttonDisabled, pressed && styles.buttonPressed]}
+            onPress={handleGoogleSignIn}
+            disabled={busy}
+          >
+            {state.oauthLoading ? (
+              <ActivityIndicator size="small" color="#1f1f1f" />
+            ) : (
+              <>
+                <Text style={styles.googleG}>G</Text>
+                <Text style={styles.googleText}>Continue with Google</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#999"
-          value={state.password}
-          onChangeText={(password) => setState(prev => ({ ...prev, password }))}
-          secureTextEntry
-          editable={!state.loading}
-        />
-
-        <Pressable
-          style={[styles.button, state.loading && styles.buttonDisabled]}
-          onPress={handleSignIn}
-          disabled={state.loading}
-        >
-          {state.loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
-          )}
-        </Pressable>
-
-        <Pressable onPress={() => router.push('/sign-up')}>
+        <Pressable onPress={() => router.push('/sign-up')} disabled={busy}>
           <Text style={styles.linkText}>Don't have an account? Sign up</Text>
         </Pressable>
-      </View>
-    </View>
+
+        <Text style={styles.legal}>Secured by Clerk · nuwrrrld.com</Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: theme.bg.base,
+  },
+  scroll: {
+    flexGrow: 1,
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl * 2,
+    paddingBottom: spacing.xxl,
   },
-  content: {
-    width: '85%',
-    maxWidth: 400,
+  brand: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: theme.text.primary,
+    letterSpacing: 4,
+    fontFamily: theme.font.mono,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
+  tagline: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 2,
+    color: theme.accent.indigo,
+    marginTop: spacing.xs,
+    textTransform: 'uppercase',
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 24,
-  },
-  input: {
-    backgroundColor: '#fff',
+  card: {
+    width: '100%',
+    maxWidth: 380,
+    marginTop: spacing.xxl,
+    backgroundColor: theme.bg.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
-    fontSize: 14,
-    color: '#333',
+    borderColor: theme.border.subtle,
   },
-  button: {
-    backgroundColor: '#4285F4',
-    paddingVertical: 14,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 8,
+  heading: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.text.primary,
+    marginBottom: spacing.sm,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  subheading: {
+    fontSize: 12,
+    color: theme.text.secondary,
+    lineHeight: 18,
+    marginBottom: spacing.xl,
   },
   errorBox: {
-    backgroundColor: '#ffebee',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: 'rgba(244,63,94,0.1)',
+    borderColor: 'rgba(244,63,94,0.3)',
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
   },
   errorText: {
-    color: '#c62828',
+    fontSize: 12,
+    color: theme.accent.red,
+  },
+  input: {
+    backgroundColor: theme.bg.elevated,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
     fontSize: 14,
+    color: theme.text.primary,
+  },
+  primaryButton: {
+    backgroundColor: theme.accent.indigo,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+    gap: spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: theme.border.subtle,
+  },
+  dividerText: {
+    fontSize: 11,
+    color: theme.text.muted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    backgroundColor: '#ffffff',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+  },
+  googleG: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#4285F4',
+    fontFamily: theme.font.mono,
+  },
+  googleText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1f1f1f',
+    letterSpacing: 0.3,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
   linkText: {
-    color: '#4285F4',
-    fontSize: 14,
-    marginTop: 16,
+    color: theme.accent.indigo,
+    fontSize: 13,
+    marginTop: spacing.xl,
     textAlign: 'center',
+  },
+  legal: {
+    marginTop: spacing.xl,
+    fontSize: 10,
+    color: theme.text.muted,
+    letterSpacing: 0.5,
   },
 });
