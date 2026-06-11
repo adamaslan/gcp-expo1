@@ -1,7 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSignIn } from '@clerk/clerk-expo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { View, StyleSheet, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
+import { theme, radius, spacing } from '@/lib/ui/theme';
 import { authLogger } from '@/lib/resilience/auth-logger';
 
 interface TwoFactorState {
@@ -11,18 +19,26 @@ interface TwoFactorState {
 }
 
 export default function SignIn2FAScreen() {
-  const { signIn, setActive } = useSignIn();
+  const { signIn, setActive, isLoaded } = useSignIn();
   const router = useRouter();
-  const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
+  useLocalSearchParams<{ sessionId: string }>();
+  const inputRef = useRef<TextInput>(null);
   const [state, setState] = useState<TwoFactorState>({
     code: '',
     error: '',
     loading: false,
   });
 
+  // Guard against cold reload: signIn is null when the 2FA screen is
+  // opened directly without completing step 1 in the same React tree.
+  if (isLoaded && !signIn) {
+    router.replace('/sign-in');
+    return null;
+  }
+
   async function handleVerifyCode() {
     if (!state.code || state.code.length < 6) {
-      setState(prev => ({ ...prev, error: 'Please enter a valid code' }));
+      setState(prev => ({ ...prev, error: 'Please enter the full 6-digit code' }));
       return;
     }
 
@@ -38,12 +54,14 @@ export default function SignIn2FAScreen() {
         router.replace('/(tabs)');
       } else {
         authLogger.warn('2fa_incomplete', 'Verification incomplete', { status: result.status });
-        setState(prev => ({ ...prev, error: 'Verification incomplete. Please try again.' }));
+        setState(prev => ({ ...prev, error: 'Verification incomplete. Please try again.', code: '' }));
+        inputRef.current?.focus();
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Verification failed';
       authLogger.error('2fa_failed', 'Two-factor verification failed', err as Error, {});
-      setState(prev => ({ ...prev, error: msg }));
+      setState(prev => ({ ...prev, error: msg, code: '' }));
+      inputRef.current?.focus();
     } finally {
       setState(prev => ({ ...prev, loading: false }));
     }
@@ -52,41 +70,60 @@ export default function SignIn2FAScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Two-Factor Authentication</Text>
-        <Text style={styles.subtitle}>Enter the code from your authenticator app</Text>
+        <Text style={styles.brand}>NuWrrrld Financial</Text>
+        <Text style={styles.tagline}>Markets · Signals · Intelligence</Text>
 
-        {state.error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{state.error}</Text>
-          </View>
-        )}
+        <View style={styles.card}>
+          <Text style={styles.heading}>Two-factor auth</Text>
+          <Text style={styles.subheading}>
+            Enter the 6-digit code from your authenticator app.
+          </Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="000000"
-          placeholderTextColor="#999"
-          value={state.code}
-          onChangeText={(code) => setState(prev => ({ ...prev, code: code.replace(/\D/g, '').slice(0, 6) }))}
-          editable={!state.loading}
-          keyboardType="number-pad"
-          maxLength={6}
-        />
+          {state.error ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{state.error}</Text>
+            </View>
+          ) : null}
 
-        <Pressable
-          style={[styles.button, state.loading && styles.buttonDisabled]}
-          onPress={handleVerifyCode}
-          disabled={state.loading}
-        >
-          {state.loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Verify</Text>
-          )}
-        </Pressable>
+          <TextInput
+            ref={inputRef}
+            style={styles.otpInput}
+            placeholder="000000"
+            placeholderTextColor={theme.text.muted}
+            value={state.code}
+            onChangeText={code =>
+              setState(prev => ({ ...prev, code: code.replace(/\D/g, '').slice(0, 6) }))
+            }
+            keyboardType="number-pad"
+            maxLength={6}
+            editable={!state.loading}
+            autoFocus
+            textAlign="center"
+            onSubmitEditing={handleVerifyCode}
+          />
 
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.linkText}>Back to sign in</Text>
-        </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryButton,
+              state.loading && styles.buttonDisabled,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleVerifyCode}
+            disabled={state.loading}
+          >
+            {state.loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Verify</Text>
+            )}
+          </Pressable>
+
+          <Pressable onPress={() => router.back()} disabled={state.loading}>
+            <Text style={styles.linkText}>Back to sign in</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.legal}>Secured by Clerk · nuwrrrld.com</Text>
       </View>
     </View>
   );
@@ -95,68 +132,106 @@ export default function SignIn2FAScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: theme.bg.base,
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
   },
   content: {
-    width: '85%',
-    maxWidth: 400,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 24,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
-    fontSize: 32,
-    letterSpacing: 8,
-    color: '#333',
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#4285F4',
-    paddingVertical: 14,
-    borderRadius: 8,
-    justifyContent: 'center',
+    width: '100%',
     alignItems: 'center',
-    marginVertical: 8,
+    paddingHorizontal: spacing.xl,
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  brand: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: theme.text.primary,
+    letterSpacing: 4,
+    fontFamily: theme.font.mono,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  tagline: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 2,
+    color: theme.accent.indigo,
+    marginTop: spacing.xs,
+    textTransform: 'uppercase',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 380,
+    marginTop: spacing.xxl,
+    backgroundColor: theme.bg.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.text.primary,
+    marginBottom: spacing.sm,
+  },
+  subheading: {
+    fontSize: 12,
+    color: theme.text.secondary,
+    lineHeight: 18,
+    marginBottom: spacing.xl,
   },
   errorBox: {
-    backgroundColor: '#ffebee',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: 'rgba(244,63,94,0.1)',
+    borderColor: 'rgba(244,63,94,0.3)',
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
   },
   errorText: {
-    color: '#c62828',
+    fontSize: 12,
+    color: theme.accent.red,
+  },
+  otpInput: {
+    backgroundColor: theme.bg.elevated,
+    borderWidth: 1,
+    borderColor: theme.border.accent,
+    borderRadius: radius.md,
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.md,
+    fontSize: 36,
+    letterSpacing: 12,
+    color: theme.text.primary,
+    fontFamily: theme.font.mono,
+  },
+  primaryButton: {
+    backgroundColor: theme.accent.indigo,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  primaryButtonText: {
+    color: '#fff',
     fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
   linkText: {
-    color: '#4285F4',
-    fontSize: 14,
-    marginTop: 16,
+    color: theme.accent.indigo,
+    fontSize: 13,
+    marginTop: spacing.lg,
     textAlign: 'center',
+  },
+  legal: {
+    marginTop: spacing.xxl,
+    fontSize: 10,
+    color: theme.text.muted,
+    letterSpacing: 0.5,
   },
 });

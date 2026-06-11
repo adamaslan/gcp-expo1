@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import * as SecureStore from './secure-storage';
-import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-expo';
+import { useAuth as useClerkAuth, useUser, useSession } from '@clerk/clerk-expo';
+import { useRouter } from 'expo-router';
+import { SESSION_CACHE_KEY, TOKEN_CACHE_KEY } from './auth-constants';
 
 interface AuthContextType {
   isLoaded: boolean;
@@ -8,33 +11,32 @@ interface AuthContextType {
   userId: string | null;
   userEmail: string | null;
   sessionToken: string | null;
+  signOut: () => Promise<void>;
   retry: (fn: () => Promise<void>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Keep in sync with OFFLINE_MODE_KEY in app/sign-in.tsx
-const SESSION_CACHE_KEY = 'offline_auth_session';
-const TOKEN_CACHE_KEY = 'auth_token_cache';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 500;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { isLoaded, isSignedIn, sessionId } = useClerkAuth();
+  const { isLoaded, isSignedIn, sessionId, signOut: clerkSignOut } = useClerkAuth();
   const { user } = useUser();
+  const { session } = useSession();
+  const router = useRouter();
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const prevSessionStatus = useRef<string | null>(null);
 
   useEffect(() => {
     async function initialize() {
       try {
-        // Try to restore cached session
         const cachedToken = await SecureStore.getItemAsync(TOKEN_CACHE_KEY);
         if (cachedToken) {
           setSessionToken(cachedToken);
         }
 
-        // Cache current session when available
         if (sessionId) {
           await SecureStore.setItemAsync(SESSION_CACHE_KEY, JSON.stringify({ sessionId, timestamp: Date.now() }));
         }
@@ -47,6 +49,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initialize();
   }, [sessionId]);
+
+  // Refresh the short-lived JWT and persist it whenever the Clerk session changes.
+  useEffect(() => {
+    if (!session) {
+      setSessionToken(null);
+      SecureStore.deleteItemAsync(TOKEN_CACHE_KEY).catch(() => {});
+      return;
+    }
+
+    async function refreshToken() {
+      try {
+        const token = await session!.getToken();
+        if (token) {
+          setSessionToken(token);
+          await SecureStore.setItemAsync(TOKEN_CACHE_KEY, token);
+        }
+      } catch (err) {
+        console.warn('Failed to refresh session token:', err);
+      }
+    }
+
+    refreshToken();
+  }, [session]);
+
+  // Detect session expiry: when status transitions away from 'active', clear cache and redirect.
+  useEffect(() => {
+    const currentStatus = session?.status ?? null;
+    const prev = prevSessionStatus.current;
+
+    if (prev === 'active' && currentStatus !== 'active' && currentStatus !== null) {
+      SecureStore.deleteItemAsync(SESSION_CACHE_KEY).catch(() => {});
+      SecureStore.deleteItemAsync(TOKEN_CACHE_KEY).catch(() => {});
+      setSessionToken(null);
+      router.replace('/sign-in');
+    }
+
+    prevSessionStatus.current = currentStatus;
+  }, [session?.status]);
+
+  // Re-validate on app foreground to catch expiry before the next API call.
+  useEffect(() => {
+    const handleAppStateChange = async (nextState: AppStateStatus) => {
+      if (nextState !== 'active' || !session) return;
+      try {
+        const token = await session.getToken();
+        if (token) {
+          setSessionToken(token);
+          await SecureStore.setItemAsync(TOKEN_CACHE_KEY, token);
+        }
+      } catch {
+        // Token fetch failed — session may be expired; the status effect above will catch it.
+      }
+    };
+
+    const sub = AppState.addEventListener('change', handleAppStateChange);
+    return () => sub.remove();
+  }, [session]);
+
+  async function signOut() {
+    try {
+      await clerkSignOut();
+    } finally {
+      await Promise.allSettled([
+        SecureStore.deleteItemAsync(SESSION_CACHE_KEY),
+        SecureStore.deleteItemAsync(TOKEN_CACHE_KEY),
+      ]);
+      setSessionToken(null);
+    }
+  }
 
   async function retry(fn: () => Promise<void>) {
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -66,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userId: user?.id || null,
     userEmail: user?.emailAddresses?.[0]?.emailAddress || null,
     sessionToken,
+    signOut,
     retry,
   };
 

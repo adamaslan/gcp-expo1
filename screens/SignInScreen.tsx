@@ -19,7 +19,7 @@ export default function SignInScreen() {
     try {
       const result = await startOAuthFlow({
         // Web ignores this; native uses it to deep-link back into the app.
-        redirectUrl: Platform.OS === 'web' ? undefined : 'gcp3mobile://oauth-callback',
+        redirectUrl: Platform.OS === 'web' ? undefined : 'nuwrrrld://oauth-callback',
       });
       if (result?.createdSessionId && result?.setActive) {
         await result.setActive({ session: result.createdSessionId });
@@ -45,8 +45,8 @@ export default function SignInScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.brand}>GCP3</Text>
-        <Text style={styles.tagline}>Signals · Verdicts · Council</Text>
+        <Text style={styles.brand}>NuWrrrld Financial</Text>
+        <Text style={styles.tagline}>Markets · Signals · Intelligence</Text>
 
         <View style={styles.card}>
           <Text style={styles.heading}>Sign in</Text>

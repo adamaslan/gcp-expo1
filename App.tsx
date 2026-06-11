@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Text, ActivityIndicator, SafeAreaView } from 'react-native';
+import { StyleSheet, View, Text, ActivityIndicator, SafeAreaView, ScrollView } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { AuthProvider } from './lib/auth-provider';
@@ -11,6 +11,7 @@ import ChatScreen from './screens/ChatScreen';
 import SignInScreen from './screens/SignInScreen';
 import TabBar, { type TabKey } from './components/TabBar';
 import { theme } from './lib/ui/theme';
+import { validateConfig } from './lib/config-validator';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -126,7 +127,39 @@ function AppRoot() {
   );
 }
 
+function ConfigErrorScreen({ errors }: { errors: string[] }) {
+  return (
+    <SafeAreaView style={styles.configErrorShell}>
+      <ScrollView contentContainerStyle={styles.configErrorContent}>
+        <Text style={styles.configErrorTitle}>Configuration Error</Text>
+        <Text style={styles.configErrorSubtitle}>
+          The app cannot start because required environment variables are missing.
+        </Text>
+        {errors.map((err, i) => (
+          <View key={i} style={styles.configErrorRow}>
+            <Text style={styles.configErrorBullet}>•</Text>
+            <Text style={styles.configErrorMsg}>{err}</Text>
+          </View>
+        ))}
+        <Text style={styles.configErrorHint}>
+          Set these variables in .env.local and restart the dev server.
+        </Text>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
 export default function App() {
+  const configResult = validateConfig();
+
+  if (!configResult.isValid) {
+    return (
+      <SafeAreaProvider>
+        <ConfigErrorScreen errors={configResult.errors} />
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
@@ -176,5 +209,47 @@ const styles = StyleSheet.create({
     color: theme.accent.yellow,
     fontSize: 12,
     textAlign: 'center',
+  },
+  configErrorShell: {
+    flex: 1,
+    backgroundColor: '#0f0f0f',
+  },
+  configErrorContent: {
+    flexGrow: 1,
+    padding: 24,
+    paddingTop: 60,
+  },
+  configErrorTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#f43f5e',
+    marginBottom: 8,
+  },
+  configErrorSubtitle: {
+    fontSize: 14,
+    color: '#aaa',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  configErrorRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  configErrorBullet: {
+    color: '#f43f5e',
+    fontSize: 14,
+  },
+  configErrorMsg: {
+    color: '#fff',
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 19,
+  },
+  configErrorHint: {
+    marginTop: 24,
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 18,
   },
 });

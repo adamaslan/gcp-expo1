@@ -12,9 +12,10 @@ export interface ValidationResult {
 }
 
 const REQUIRED_CONFIGS = [
-  "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+  "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY",
   "CLERK_SECRET_KEY",
-  "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
+  "EXPO_PUBLIC_GOOGLE_CLIENT_ID",
+  ...(process.env.NODE_ENV === 'production' ? ["CLERK_WEBHOOK_SECRET"] : []),
 ];
 
 // Backend URLs are required in production, optional in dev (demo mode still works)
@@ -26,7 +27,8 @@ const BACKEND_URL_CONFIGS = [
 
 const OPTIONAL_CONFIGS = [
   "GOOGLE_CLIENT_SECRET",
-  "CLERK_WEBHOOK_SECRET",
+  ...(process.env.NODE_ENV !== 'production' ? ["CLERK_WEBHOOK_SECRET"] : []),
+  "STRIPE_PUBLISHABLE_KEY",
   "NODE_ENV",
   ...BACKEND_URL_CONFIGS,
 ];
@@ -89,10 +91,10 @@ export function getConfigSummary(): Record<string, string | boolean> {
   return {
     isValid: validation.isValid,
     clerkConfigured: validation.configs.find(
-      (c) => c.name === "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
+      (c) => c.name === "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY"
     )?.present || false,
     googleConfigured: validation.configs.find(
-      (c) => c.name === "NEXT_PUBLIC_GOOGLE_CLIENT_ID"
+      (c) => c.name === "EXPO_PUBLIC_GOOGLE_CLIENT_ID"
     )?.present || false,
     webhooksConfigured:
       !!process.env.CLERK_WEBHOOK_SECRET,

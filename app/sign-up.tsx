@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
 import { useSignUp } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { View, StyleSheet, Text, TextInput, Pressable, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { theme, radius, spacing } from '@/lib/ui/theme';
 
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
@@ -37,14 +48,14 @@ export default function SignUpScreen() {
     if (!state.email || !state.password || !state.confirmPassword) {
       return 'All fields are required';
     }
-    if (!state.email.includes('@')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email)) {
       return 'Please enter a valid email';
     }
     if (state.password.length < PASSWORD_MIN_LENGTH) {
       return `Password must be at least ${PASSWORD_MIN_LENGTH} characters`;
     }
     if (!PASSWORD_REGEX.test(state.password)) {
-      return 'Password must contain uppercase, lowercase, number, and special character';
+      return 'Password must include uppercase, lowercase, number, and special character';
     }
     if (state.password !== state.confirmPassword) {
       return 'Passwords do not match';
@@ -62,41 +73,39 @@ export default function SignUpScreen() {
     }
 
     setState(prev => ({ ...prev, error: '', loading: true }));
-
     try {
       const result = await signUp.create({
         emailAddress: state.email,
         password: state.password,
-        firstName: state.firstName,
-        lastName: state.lastName,
+        firstName: state.firstName || undefined,
+        lastName: state.lastName || undefined,
       });
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
         router.replace('/(tabs)');
       } else if (result.status === 'missing_requirements') {
+        await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
         setState(prev => ({ ...prev, pendingVerification: true }));
       } else {
         setState(prev => ({ ...prev, error: 'Sign up failed. Please try again.' }));
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Sign up failed';
-      setState(prev => ({ ...prev, error: msg }));
+      setState(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Sign up failed' }));
     } finally {
       setState(prev => ({ ...prev, loading: false }));
     }
   }
 
-  async function handleVerificationCode() {
+  async function handleVerifyCode() {
     if (!state.code) {
       setState(prev => ({ ...prev, error: 'Please enter the verification code' }));
       return;
     }
 
-    setState(prev => ({ ...prev, loading: true }));
+    setState(prev => ({ ...prev, loading: true, error: '' }));
     try {
       const result = await signUp.attemptEmailAddressVerification({ code: state.code });
-
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
         router.replace('/(tabs)');
@@ -104,8 +113,7 @@ export default function SignUpScreen() {
         setState(prev => ({ ...prev, error: 'Verification failed. Check your code and try again.' }));
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Verification failed';
-      setState(prev => ({ ...prev, error: msg }));
+      setState(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Verification failed' }));
     } finally {
       setState(prev => ({ ...prev, loading: false }));
     }
@@ -114,110 +122,149 @@ export default function SignUpScreen() {
   if (state.pendingVerification) {
     return (
       <View style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Verify Email</Text>
-          <Text style={styles.subtitle}>Enter the code sent to {state.email}</Text>
+        <View style={styles.centeredContent}>
+          <Text style={styles.brand}>NuWrrrld Financial</Text>
+          <Text style={styles.tagline}>Markets · Signals · Intelligence</Text>
 
-          {state.error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{state.error}</Text>
-            </View>
-          )}
+          <View style={styles.card}>
+            <Text style={styles.heading}>Check your email</Text>
+            <Text style={styles.subheading}>
+              We sent a 6-digit code to {state.email}
+            </Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Verification code"
-            value={state.code}
-            onChangeText={(code) => setState(prev => ({ ...prev, code }))}
-            keyboardType="number-pad"
-            maxLength={6}
-            editable={!state.loading}
-          />
+            {state.error ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{state.error}</Text>
+              </View>
+            ) : null}
 
-          <Pressable
-            style={[styles.button, state.loading && styles.buttonDisabled]}
-            onPress={handleVerificationCode}
-            disabled={state.loading}
-          >
-            {state.loading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.buttonText}>Verify</Text>
-            )}
-          </Pressable>
+            <TextInput
+              style={styles.otpInput}
+              placeholder="000000"
+              placeholderTextColor={theme.text.muted}
+              value={state.code}
+              onChangeText={code => setState(prev => ({ ...prev, code: code.replace(/\D/g, '').slice(0, 6) }))}
+              keyboardType="number-pad"
+              maxLength={6}
+              editable={!state.loading}
+              textAlign="center"
+            />
+
+            <Pressable
+              style={({ pressed }) => [styles.primaryButton, state.loading && styles.buttonDisabled, pressed && styles.buttonPressed]}
+              onPress={handleVerifyCode}
+              disabled={state.loading}
+            >
+              {state.loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Verify Email</Text>
+              )}
+            </Pressable>
+
+            <Pressable onPress={() => setState(prev => ({ ...prev, pendingVerification: false }))} disabled={state.loading}>
+              <Text style={styles.linkText}>Back to sign up</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Create Account</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <Text style={styles.brand}>NuWrrrld Financial</Text>
+        <Text style={styles.tagline}>Markets · Signals · Intelligence</Text>
 
-          {state.error && (
+        <View style={styles.card}>
+          <Text style={styles.heading}>Create account</Text>
+          <Text style={styles.subheading}>Join to access signals and verdicts.</Text>
+
+          {state.error ? (
             <View style={styles.errorBox}>
               <Text style={styles.errorText}>{state.error}</Text>
             </View>
-          )}
+          ) : null}
 
-          <TextInput
-            style={styles.input}
-            placeholder="First Name"
-            value={state.firstName}
-            onChangeText={(firstName) => setState(prev => ({ ...prev, firstName }))}
-            editable={!state.loading}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Last Name"
-            value={state.lastName}
-            onChangeText={(lastName) => setState(prev => ({ ...prev, lastName }))}
-            editable={!state.loading}
-          />
+          <View style={styles.nameRow}>
+            <TextInput
+              style={[styles.input, styles.nameInput]}
+              placeholder="First name"
+              placeholderTextColor={theme.text.muted}
+              value={state.firstName}
+              onChangeText={firstName => setState(prev => ({ ...prev, firstName }))}
+              editable={!state.loading}
+              autoCorrect={false}
+            />
+            <TextInput
+              style={[styles.input, styles.nameInput]}
+              placeholder="Last name"
+              placeholderTextColor={theme.text.muted}
+              value={state.lastName}
+              onChangeText={lastName => setState(prev => ({ ...prev, lastName }))}
+              editable={!state.loading}
+              autoCorrect={false}
+            />
+          </View>
+
           <TextInput
             style={styles.input}
             placeholder="Email"
+            placeholderTextColor={theme.text.muted}
             value={state.email}
-            onChangeText={(email) => setState(prev => ({ ...prev, email }))}
+            onChangeText={email => setState(prev => ({ ...prev, email }))}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
             editable={!state.loading}
           />
+
           <TextInput
             style={styles.input}
             placeholder="Password"
+            placeholderTextColor={theme.text.muted}
             value={state.password}
-            onChangeText={(password) => setState(prev => ({ ...prev, password }))}
-            secureTextEntry
-            editable={!state.loading}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm Password"
-            value={state.confirmPassword}
-            onChangeText={(confirmPassword) => setState(prev => ({ ...prev, confirmPassword }))}
+            onChangeText={password => setState(prev => ({ ...prev, password }))}
             secureTextEntry
             editable={!state.loading}
           />
 
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm password"
+            placeholderTextColor={theme.text.muted}
+            value={state.confirmPassword}
+            onChangeText={confirmPassword => setState(prev => ({ ...prev, confirmPassword }))}
+            secureTextEntry
+            editable={!state.loading}
+          />
+
+          <Text style={styles.passwordHint}>
+            Min 8 chars · uppercase · lowercase · number · special character
+          </Text>
+
           <Pressable
-            style={[styles.button, state.loading && styles.buttonDisabled]}
+            style={({ pressed }) => [styles.primaryButton, state.loading && styles.buttonDisabled, pressed && styles.buttonPressed]}
             onPress={handleSignUp}
             disabled={state.loading}
           >
             {state.loading ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Sign Up</Text>
+              <Text style={styles.primaryButtonText}>Create Account</Text>
             )}
           </Pressable>
-
-          <Pressable onPress={() => router.push('/sign-in')}>
-            <Text style={styles.linkText}>Already have an account? Sign in</Text>
-          </Pressable>
         </View>
+
+        <Pressable onPress={() => router.push('/sign-in')} disabled={state.loading}>
+          <Text style={styles.linkText}>Already have an account? Sign in</Text>
+        </Pressable>
+
+        <Text style={styles.legal}>Secured by Clerk · nuwrrrld.com</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -226,70 +273,137 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.bg.base,
   },
-  scrollContent: {
+  scroll: {
     flexGrow: 1,
-    justifyContent: 'center',
-  },
-  content: {
-    width: '85%',
-    maxWidth: 400,
-    marginHorizontal: 'auto',
-    paddingVertical: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 24,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 12,
-    fontSize: 14,
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#4285F4',
-    paddingVertical: 14,
-    borderRadius: 8,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl * 2,
+    paddingBottom: spacing.xxl,
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  centeredContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  brand: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: theme.text.primary,
+    letterSpacing: 4,
+    fontFamily: theme.font.mono,
+  },
+  tagline: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 2,
+    color: theme.accent.indigo,
+    marginTop: spacing.xs,
+    textTransform: 'uppercase',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 380,
+    marginTop: spacing.xxl,
+    backgroundColor: theme.bg.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.text.primary,
+    marginBottom: spacing.sm,
+  },
+  subheading: {
+    fontSize: 12,
+    color: theme.text.secondary,
+    lineHeight: 18,
+    marginBottom: spacing.xl,
   },
   errorBox: {
-    backgroundColor: '#ffebee',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: 'rgba(244,63,94,0.1)',
+    borderColor: 'rgba(244,63,94,0.3)',
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
   },
   errorText: {
-    color: '#c62828',
+    fontSize: 12,
+    color: theme.accent.red,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: 0,
+  },
+  nameInput: {
+    flex: 1,
+  },
+  input: {
+    backgroundColor: theme.bg.elevated,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
     fontSize: 14,
+    color: theme.text.primary,
+  },
+  otpInput: {
+    backgroundColor: theme.bg.elevated,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.md,
+    fontSize: 32,
+    letterSpacing: 10,
+    color: theme.text.primary,
+  },
+  passwordHint: {
+    fontSize: 10,
+    color: theme.text.muted,
+    marginBottom: spacing.md,
+    lineHeight: 15,
+  },
+  primaryButton: {
+    backgroundColor: theme.accent.indigo,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
   linkText: {
-    color: '#4285F4',
-    fontSize: 14,
-    marginTop: 16,
+    color: theme.accent.indigo,
+    fontSize: 13,
+    marginTop: spacing.xl,
     textAlign: 'center',
+  },
+  legal: {
+    marginTop: spacing.xl,
+    fontSize: 10,
+    color: theme.text.muted,
+    letterSpacing: 0.5,
   },
 });

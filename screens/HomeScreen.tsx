@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
-import { useUser, useClerk } from '@clerk/clerk-expo';
+import { useUser } from '@clerk/clerk-expo';
+import { useAuthContext } from '../lib/auth-provider';
 import { getMarketOverview, getMacroPulse, type MarketOverview, type MacroPulse } from '../lib/clients/gcp3';
 
 type LoadState<T> = { status: 'idle' } | { status: 'loading' } | { status: 'ok'; data: T } | { status: 'error'; message: string };
@@ -34,7 +35,7 @@ function SentimentBadge({ sentiment }: { sentiment: string }) {
 
 export default function HomeScreen() {
   const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
+  const { signOut } = useAuthContext();
 
   const overviewState = useFetch(getMarketOverview);
   const macroState = useFetch(getMacroPulse);
