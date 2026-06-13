@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NuWrrrld Financial — The Signal Engine</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:     #0a0a0f;
+      --bg-surface:  #13131c;
+      --bg-elevated: #1a1a26;
+      --border:      #262638;
+      --indigo:      #6366f1;
+      --indigo-deep: #4338ca;
+      --cyan:        #22d3ee;
+      --green:       #10b981;
+      --green-dim:   #34d399;
+      --red:         #f43f5e;
+      --red-dim:     #fb7185;
+      --yellow:      #fbbf24;
+      --text-primary:#e4e4f4;
+      --text-secondary:#9696b0;
+      --text-muted:  #5a5a78;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── UTILS ── */
+    .grad-text {
+      background: linear-gradient(135deg, var(--indigo) 0%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .grad-text-warm {
+      background: linear-gradient(135deg, var(--yellow) 0%, var(--red) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .mono { font-family: 'Menlo', 'Fira Code', monospace; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(10,10,15,0.90);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 17px; font-weight: 800; letter-spacing: -0.5px;
+      color: var(--text-primary); text-decoration: none;
+    }
+    .nav-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--indigo); box-shadow: 0 0 8px var(--indigo);
+      animation: pulse-dot 2s infinite;
+    }
+    .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+    .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text-primary); }
+    .btn-cta {
+      background: var(--indigo); color: #fff; border: none;
+      padding: 9px 20px; border-radius: 8px; font-size: 14px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      box-shadow: 0 0 20px rgba(99,102,241,0.3);
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-cta:hover { opacity: 0.85; transform: translateY(-1px); }
+
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 6px var(--indigo); }
+      50%       { box-shadow: 0 0 14px var(--indigo); }
+    }
+
+    /* ── TICKER ── */
+    .ticker-tape {
+      margin-top: 65px;
+      overflow: hidden;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      padding: 9px 0;
+      white-space: nowrap;
+    }
+    .ticker-inner { display: inline-block; animation: scroll-left 35s linear infinite; }
+    .t-item {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0 26px; font-size: 12px; font-family: 'Menlo', monospace;
+      color: var(--text-secondary); border-right: 1px solid var(--border);
+    }
+    .t-sym { color: var(--text-primary); font-weight: 700; }
+    .t-up  { color: var(--green-dim); font-weight: 600; }
+    .t-dn  { color: var(--red-dim);   font-weight: 600; }
+    @keyframes scroll-left {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; overflow: hidden;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 100px 24px 80px;
+    }
+    .glow { position: absolute; border-radius: 50%; filter: blur(120px); pointer-events: none; }
+    .glow-a { width: 700px; height: 500px; background: rgba(99,102,241,0.16); top: -80px; left: 50%; transform: translateX(-50%); }
+    .glow-b { width: 350px; height: 350px; background: rgba(34,211,238,0.09); bottom: 60px; right: -60px; }
+    .glow-c { width: 280px; height: 280px; background: rgba(244,63,94,0.06);  bottom: 80px; left: -40px; }
+
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.28);
+      border-radius: 100px; padding: 6px 16px;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.8px;
+      color: #a5b4fc; margin-bottom: 28px; text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-size: clamp(42px, 7vw, 88px);
+      font-weight: 900; letter-spacing: -3px; line-height: 1.02;
+      max-width: 900px; margin-bottom: 10px;
+    }
+    .hero h1 .sub-headline {
+      display: block; font-size: clamp(20px, 3vw, 36px);
+      font-weight: 500; letter-spacing: -0.5px; color: var(--text-secondary);
+      margin-top: 10px;
+    }
+
+    .hero-stats-row {
+      display: flex; gap: 40px; flex-wrap: wrap; justify-content: center;
+      margin: 36px 0 44px;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat-num {
+      font-size: 38px; font-weight: 900; letter-spacing: -1.5px; line-height: 1;
+      margin-bottom: 4px;
+    }
+    .hero-stat-lbl { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.3px; }
+
+    .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 64px; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--indigo), var(--indigo-deep));
+      color: #fff; border: none; padding: 15px 36px; border-radius: 10px;
+      font-size: 16px; font-weight: 700; cursor: pointer; text-decoration: none;
+      box-shadow: 0 0 36px rgba(99,102,241,0.38);
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.87; transform: translateY(-2px); }
+    .btn-ghost {
+      background: transparent; color: var(--text-secondary);
+      border: 1px solid var(--border); padding: 15px 36px; border-radius: 10px;
+      font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: border-color 0.2s, color 0.2s, transform 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--indigo); color: var(--text-primary); transform: translateY(-2px); }
+
+    /* ── SIGNAL MATRIX PREVIEW ── */
+    .matrix-preview {
+      width: 100%; max-width: 1000px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 40px 120px rgba(0,0,0,0.85), 0 0 0 1px rgba(99,102,241,0.08);
+    }
+    .mp-header {
+      background: var(--bg-elevated); padding: 12px 20px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mp-dots { display: flex; gap: 6px; }
+    .mp-dots span { width: 9px; height: 9px; border-radius: 50%; }
+    .d-r { background: var(--red); } .d-y { background: var(--yellow); } .d-g { background: var(--green); }
+    .mp-title { font-size: 12px; color: var(--text-muted); margin-left: 6px; font-weight: 500; }
+
+    .matrix-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .matrix-table th {
+      padding: 8px 12px; text-align: center;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .matrix-table th:first-child { text-align: left; }
+    .matrix-table td {
+      padding: 7px 12px; border-bottom: 1px solid rgba(38,38,56,0.5);
+      text-align: center; vertical-align: middle;
+    }
+    .matrix-table td:first-child { text-align: left; }
+    .matrix-table tr:last-child td { border-bottom: none; }
+
+    .sig-name { font-weight: 600; color: var(--text-primary); font-size: 12px; }
+    .sig-cat  { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+
+    .cell {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 52px; height: 22px; border-radius: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px; font-family: 'Menlo', monospace;
+    }
+    .sb { background: rgba(16,185,129,0.20); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .b  { background: rgba(16,185,129,0.10); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.15); }
+    .h  { background: rgba(148,163,184,0.10); color: #94a3b8; border: 1px solid rgba(148,163,184,0.15); }
+    .s  { background: rgba(244,63,94,0.10);   color: #fda4af; border: 1px solid rgba(244,63,94,0.15); }
+    .ss { background: rgba(244,63,94,0.20);   color: #fb7185; border: 1px solid rgba(244,63,94,0.3); }
+
+    .conf { font-size: 10px; color: var(--text-muted); font-family: 'Menlo', monospace; }
+
+    /* ── SECTION SHELL ── */
+    .section { padding: 96px 48px; max-width: 1200px; margin: 0 auto; }
+    .section-eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--indigo); margin-bottom: 14px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 50px); font-weight: 900;
+      letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 18px;
+    }
+    .section-sub { font-size: 18px; color: var(--text-secondary); max-width: 600px; line-height: 1.7; }
+
+    /* ── SIGNAL CATEGORIES ── */
+    .sig-bg { background: var(--bg-surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+    .sig-cats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); margin-top: 56px; }
+
+    .sig-cat-card { background: var(--bg-base); padding: 28px 24px; }
+    .cat-icon { font-size: 28px; margin-bottom: 14px; }
+    .cat-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.2px; }
+    .cat-count {
+      display: inline-flex; align-items: center;
+      background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 4px; padding: 2px 8px;
+      font-size: 11px; font-weight: 700; color: var(--indigo);
+      font-family: 'Menlo', monospace; margin-bottom: 12px;
+    }
+    .cat-signals { display: flex; flex-direction: column; gap: 5px; margin-top: 12px; }
+    .cat-sig-item { font-size: 12px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
+    .cat-sig-item::before { content: '→'; color: var(--text-muted); flex-shrink: 0; margin-top: 1px; }
+
+    /* ── TIMEFRAME SECTION ── */
+    .tf-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-top: 48px; }
+    .tf-card {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 16px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .tf-card:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-3px); }
+    .tf-label { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .tf-name  { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; }
+    .tf-desc  { font-size: 12px; color: var(--text-secondary); line-height: 1.55; }
+    .tf-badge {
+      display: inline-block; margin-top: 12px;
+      background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.18);
+      border-radius: 4px; padding: 3px 8px;
+      font-size: 10px; font-weight: 700; color: #a5b4fc; font-family: 'Menlo', monospace;
+    }
+
+    /* ── COUNCIL SECTION ── */
+    .council-bg { background: var(--bg-surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+    .council-tracks { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 56px; }
+
+    .track {
+      background: var(--bg-base); border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+    }
+
+    .track-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .track-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); }
+    .track-horizon {
+      font-size: 11px; font-weight: 700;
+      background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);
+      color: var(--indigo); padding: 3px 10px; border-radius: 4px; font-family: 'Menlo', monospace;
+    }
+    .track-title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin-top: 6px; }
+
+    .track-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+    .agent-card {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 20px;
+      position: relative;
+    }
+
+    .agent-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .agent-id {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; font-family: 'Menlo', monospace;
+    }
+    .id-a1 { background: rgba(99,102,241,0.15); color: var(--indigo); border: 1px solid rgba(99,102,241,0.25); }
+    .id-a2 { background: rgba(34,211,238,0.12); color: var(--cyan);   border: 1px solid rgba(34,211,238,0.22); }
+    .id-b1 { background: rgba(16,185,129,0.12); color: var(--green);  border: 1px solid rgba(16,185,129,0.22); }
+    .id-b2 { background: rgba(251,191,36,0.12); color: var(--yellow); border: 1px solid rgba(251,191,36,0.22); }
+
+    .agent-name { font-size: 14px; font-weight: 700; }
+    .agent-role { font-size: 11px; color: var(--text-muted); }
+
+    .agent-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 12px; }
+
+    .agent-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag {
+      font-size: 10px; font-weight: 600; font-family: 'Menlo', monospace;
+      background: rgba(38,38,56,0.8); border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 4px; padding: 2px 8px;
+    }
+
+    .arrow-connector {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 4px 0;
+      font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;
+    }
+    .arrow-line {
+      height: 1px; flex: 1;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+
+    .track-output {
+      background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.18);
+      border-radius: 10px; padding: 14px 18px; margin: 0 24px 20px;
+    }
+    .output-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--indigo); margin-bottom: 8px; }
+    .output-fields { display: flex; flex-wrap: wrap; gap: 6px; }
+    .output-field {
+      font-size: 11px; font-family: 'Menlo', monospace;
+      background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15);
+      color: #a5b4fc; border-radius: 4px; padding: 3px 9px;
+    }
+
+    /* ── PARALLEL INDICATOR ── */
+    .parallel-indicator {
+      text-align: center; padding: 32px 24px 0;
+      font-size: 13px; color: var(--text-muted); font-weight: 500;
+    }
+    .parallel-indicator .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+      color: var(--green-dim); border-radius: 100px; padding: 6px 16px;
+      font-size: 12px; font-weight: 700; margin-bottom: 8px;
+    }
+
+    /* ── MACRO AGENTS ── */
+    .macro-agents { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 28px; }
+    .macro-card {
+      background: var(--bg-base); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+    }
+    .macro-icon { font-size: 28px; margin-bottom: 12px; }
+    .macro-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .macro-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* ── RAG COUNCIL ── */
+    .rag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
+    .rag-card {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; position: relative; overflow: hidden;
+    }
+    .rag-card::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(99,102,241,0.04) 0%, transparent 60%);
+    }
+    .rag-tag {
+      display: inline-flex; align-items: center;
+      background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);
+      color: #a5b4fc; border-radius: 4px; padding: 3px 10px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+      font-family: 'Menlo', monospace; margin-bottom: 16px;
+    }
+    .rag-title { font-size: 18px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.3px; }
+    .rag-desc  { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 16px; }
+    .rag-focuses { display: flex; flex-direction: column; gap: 5px; }
+    .rag-focus {
+      font-size: 12px; color: var(--text-secondary);
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .rag-focus .dot-focus { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); flex-shrink: 0; margin-top: 6px; }
+
+    .rag-card.t-agree { border-color: rgba(99,102,241,0.35); }
+    .rag-card.t-agree .rag-tag { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3); }
+
+    /* ── VERDICT FLOW ── */
+    .verdict-flow {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 20px; padding: 36px 40px; margin-top: 56px;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    }
+    .vf-step { text-align: center; flex: 1; min-width: 100px; }
+    .vf-icon { font-size: 30px; margin-bottom: 8px; }
+    .vf-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .vf-sub   { font-size: 11px; color: var(--text-muted); }
+    .vf-arrow { font-size: 20px; color: var(--text-muted); flex-shrink: 0; }
+
+    /* ── EXAMPLE VERDICTS ── */
+    .verdicts-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 48px; }
+    .verdict-card {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px; text-align: center;
+    }
+    .v-symbol { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+    .v-price  { font-size: 12px; color: var(--text-muted); font-family: 'Menlo', monospace; margin-bottom: 12px; }
+    .v-verdict {
+      font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+      border-radius: 6px; padding: 6px 14px; display: inline-block; margin-bottom: 12px;
+    }
+    .v-accept   { background: rgba(16,185,129,0.15); color: var(--green-dim); border: 1px solid rgba(16,185,129,0.3); }
+    .v-watch    { background: rgba(251,191,36,0.12); color: var(--yellow);    border: 1px solid rgba(251,191,36,0.25); }
+    .v-reject   { background: rgba(244,63,94,0.12);  color: var(--red-dim);   border: 1px solid rgba(244,63,94,0.25); }
+    .v-review   { background: rgba(148,163,184,0.1); color: #94a3b8;           border: 1px solid rgba(148,163,184,0.2); }
+    .v-swing  { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+    .v-growth { font-size: 11px; color: var(--text-muted); }
+    .v-score  { font-size: 10px; font-family: 'Menlo', monospace; color: var(--text-muted); margin-top: 8px; }
+
+    /* ── CTA ── */
+    .cta-wrap {
+      text-align: center; padding: 120px 24px; position: relative; overflow: hidden;
+    }
+    .cta-radial {
+      position: absolute; width: 800px; height: 500px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.14) 0%, transparent 70%);
+      left: 50%; top: 50%; transform: translate(-50%,-50%); pointer-events: none;
+    }
+    .cta-wrap h2 {
+      font-size: clamp(32px, 5vw, 64px); font-weight: 900;
+      letter-spacing: -2px; line-height: 1.05; margin-bottom: 22px;
+    }
+    .cta-wrap p { font-size: 18px; color: var(--text-secondary); max-width: 500px; margin: 0 auto 44px; line-height: 1.7; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border); padding: 44px 48px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;
+    }
+    .footer-brand { font-size: 15px; font-weight: 800; color: var(--text-primary); }
+    .footer-links { display: flex; gap: 28px; list-style: none; }
+    .footer-links a { font-size: 13px; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--text-primary); }
+    .footer-copy { font-size: 12px; color: var(--text-muted); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .section { padding: 60px 20px; }
+      .sig-cats, .tf-grid, .verdicts-grid { grid-template-columns: 1fr 1fr; }
+      .council-tracks, .macro-agents, .rag-grid { grid-template-columns: 1fr; }
+      .verdict-flow { flex-direction: column; align-items: flex-start; }
+      .vf-arrow { transform: rotate(90deg); margin: 0 auto; }
+      footer { flex-direction: column; text-align: center; }
+    }
+    @media (max-width: 540px) {
+      .sig-cats, .tf-grid, .verdicts-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── SIGNAL CHIPS ── */
+    .sig-chip {
+      font-size: 10px; font-family: 'Menlo', 'Fira Code', monospace; font-weight: 600;
+      background: rgba(38,38,56,0.9); border: 1px solid var(--border);
+      color: var(--text-secondary); border-radius: 4px; padding: 3px 8px;
+      white-space: nowrap; transition: border-color 0.15s, color 0.15s;
+    }
+    .sig-chip:hover { border-color: var(--indigo); color: var(--text-primary); }
+    .sig-chip.cyan   { background: rgba(34,211,238,0.05);  border-color: rgba(34,211,238,0.18);  color: #67e8f9; }
+    .sig-chip.yellow { background: rgba(251,191,36,0.05);  border-color: rgba(251,191,36,0.18);  color: #fde68a; }
+    .sig-chip.green  { background: rgba(16,185,129,0.05);  border-color: rgba(16,185,129,0.18);  color: #6ee7b7; }
+
+    /* ── FADE-UP ANIMATION ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fu { animation: fadeUp 0.7s ease both; }
+    .d1 { animation-delay: 0.1s; } .d2 { animation-delay: 0.2s; }
+    .d3 { animation-delay: 0.3s; } .d4 { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="index.html">
+      <span class="nav-dot"></span>
+      NuWrrrld Financial
+    </a>
+    <ul class="nav-links">
+      <li><a href="#signals">Signals</a></li>
+      <li><a href="#council">AI Council</a></li>
+      <li><a href="#rag">Mobile Council</a></li>
+      <li><a href="https://accounts.nuwrrrld.com/sign-up" class="btn-cta">Create your account</a></li>
+    </ul>
+  </nav>
+
+  <!-- TICKER -->
+  <div class="ticker-tape">
+    <div class="ticker-inner">
+      <span class="t-item"><span class="t-sym">NVDA</span> RSI 68.4 · MACD CROSS UP <span class="t-up">SB</span></span>
+      <span class="t-item"><span class="t-sym">AAPL</span> BB SQUEEZE · VOL Z +2.1σ  <span class="t-up">B</span></span>
+      <span class="t-item"><span class="t-sym">BTC</span>  HMM: RISK_OFF 0.61 · P/C 1.34 <span class="t-dn">S</span></span>
+      <span class="t-item"><span class="t-sym">TSLA</span> PEAD +12% · EARN BEAT $0.29  <span class="t-up">SB</span></span>
+      <span class="t-item"><span class="t-sym">SPY</span>  BREADTH 72% · MCO +18         <span class="t-up">B</span></span>
+      <span class="t-item"><span class="t-sym">MSFT</span> YC FLAT · DXY -0.4 · IG OK   <span class="t-up">H</span></span>
+      <span class="t-item"><span class="t-sym">META</span> SECT-REL +8% · ALIGN 0.82    <span class="t-up">SB</span></span>
+      <span class="t-item"><span class="t-sym">VIX</span>  CONTANGO · 9d/3m 14.2/18.7    <span class="t-up">B</span></span>
+      <span class="t-item"><span class="t-sym">AMZN</span> CORR-IDIO 0.72 · LOW-BETA    <span class="t-up">B</span></span>
+      <span class="t-item"><span class="t-sym">GOOGL</span> DIV BULL · RSI 58 OK         <span class="t-dn">H</span></span>
+      <span class="t-item"><span class="t-sym">NVDA</span> RSI 68.4 · MACD CROSS UP <span class="t-up">SB</span></span>
+      <span class="t-item"><span class="t-sym">AAPL</span> BB SQUEEZE · VOL Z +2.1σ  <span class="t-up">B</span></span>
+      <span class="t-item"><span class="t-sym">BTC</span>  HMM: RISK_OFF 0.61 · P/C 1.34 <span class="t-dn">S</span></span>
+      <span class="t-item"><span class="t-sym">TSLA</span> PEAD +12% · EARN BEAT $0.29  <span class="t-up">SB</span></span>
+      <span class="t-item"><span class="t-sym">SPY</span>  BREADTH 72% · MCO +18         <span class="t-up">B</span></span>
+      <span class="t-item"><span class="t-sym">MSFT</span> YC FLAT · DXY -0.4 · IG OK   <span class="t-up">H</span></span>
+      <span class="t-item"><span class="t-sym">META</span> SECT-REL +8% · ALIGN 0.82    <span class="t-up">SB</span></span>
+      <span class="t-item"><span class="t-sym">VIX</span>  CONTANGO · 9d/3m 14.2/18.7    <span class="t-up">B</span></span>
+      <span class="t-item"><span class="t-sym">AMZN</span> CORR-IDIO 0.72 · LOW-BETA    <span class="t-up">B</span></span>
+      <span class="t-item"><span class="t-sym">GOOGL</span> DIV BULL · RSI 58 OK         <span class="t-dn">H</span></span>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="glow glow-a"></div>
+    <div class="glow glow-b"></div>
+    <div class="glow glow-c"></div>
+
+    <div class="hero-eyebrow fu">NuWrrrld Financial · Smart · Avant-garde · Caring</div>
+
+    <h1 class="fu d1">
+      <span class="grad-text">138 signals.</span>
+      <span class="sub-headline">380+ data points per ticker. 6 AI agents.</span>
+    </h1>
+
+    <div class="hero-stats-row fu d2">
+      <div class="hero-stat">
+        <div class="hero-stat-num grad-text">138</div>
+        <div class="hero-stat-lbl">Distinct signal outputs</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num grad-text">380+</div>
+        <div class="hero-stat-lbl">Data points per ticker</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num grad-text">89k</div>
+        <div class="hero-stat-lbl">Computations per full run</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num grad-text">270</div>
+        <div class="hero-stat-lbl">Symbol universe</div>
+      </div>
+    </div>
+
+    <div class="hero-ctas fu d3">
+      <a href="#signals" class="btn-primary">Explore the Signal Engine</a>
+      <a href="#council" class="btn-ghost">Meet the AI Council</a>
+    </div>
+
+    <!-- Signal Matrix Preview -->
+    <div class="matrix-preview fu d4">
+      <div class="mp-header">
+        <div class="mp-dots">
+          <span class="d-r"></span><span class="d-y"></span><span class="d-g"></span>
+        </div>
+        <span class="mp-title">Signal Matrix — NVDA · 380+ data points computed</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th style="min-width:160px;">Signal</th>
+              <th>1D</th><th>5D</th><th>1M</th><th>3M</th><th>6M</th><th>1Y</th>
+              <th>Conf</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="sig-name">RSI + Divergence</div><div class="sig-cat">Technical</div></td>
+              <td><span class="cell sb">SB</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="conf">0.87</span></td>
+            </tr>
+            <tr>
+              <td><div class="sig-name">MACD Cross State</div><div class="sig-cat">Technical</div></td>
+              <td><span class="cell sb">SB</span></td>
+              <td><span class="cell sb">SB</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="conf">0.91</span></td>
+            </tr>
+            <tr>
+              <td><div class="sig-name">Bollinger Position</div><div class="sig-cat">Technical</div></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell sb">SB</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell sb">SB</span></td>
+              <td><span class="conf">0.79</span></td>
+            </tr>
+            <tr>
+              <td><div class="sig-name">Volume Z-Score</div><div class="sig-cat">Technical</div></td>
+              <td><span class="cell sb">SB</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="conf">0.73</span></td>
+            </tr>
+            <tr>
+              <td><div class="sig-name">Regime HMM (5-state)</div><div class="sig-cat">Macro / Risk</div></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="conf">0.82</span></td>
+            </tr>
+            <tr>
+              <td><div class="sig-name">Cross-Asset Flow</div><div class="sig-cat">Cross-Asset</div></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="conf">0.68</span></td>
+            </tr>
+            <tr>
+              <td><div class="sig-name">Earnings Surprise / PEAD</div><div class="sig-cat">Event-Driven</div></td>
+              <td><span class="cell sb">SB</span></td>
+              <td><span class="cell sb">SB</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell b">B</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="cell h">H</span></td>
+              <td><span class="conf">0.94</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="padding: 10px 16px 14px; display: flex; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--border);">
+        <span style="font-size:11px; color:var(--text-muted);">Legend:</span>
+        <span class="cell sb" style="width:auto; padding: 2px 8px;">SB = Strong Buy</span>
+        <span class="cell b"  style="width:auto; padding: 2px 8px;">B = Buy</span>
+        <span class="cell h"  style="width:auto; padding: 2px 8px;">H = Hold</span>
+        <span class="cell s"  style="width:auto; padding: 2px 8px;">S = Sell</span>
+        <span class="cell ss" style="width:auto; padding: 2px 8px;">SS = Strong Sell</span>
+        <span style="font-size:11px; color:var(--text-muted); margin-left: auto; align-self: center;">Alignment score: <span class="mono" style="color:#a5b4fc;">0.84</span> · Divergence: <span class="mono" style="color:#34d399;">short_bull_long_neutral</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIGNALS SECTION -->
+  <section class="sig-bg" id="signals">
+    <div class="section">
+      <p class="section-eyebrow">Signal Engine — Full Manifest</p>
+      <h2 class="section-title">13 families. 138 outputs.<br /><span class="grad-text">380+ data points per ticker.</span></h2>
+      <p class="section-sub">
+        Each family produces multiple individual signal values. The four technical
+        families recompute all their outputs across every timeframe — so 46 core signals
+        become 276 per-ticker readings before anything else runs.
+      </p>
+
+      <!-- MATH BREAKDOWN -->
+      <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:1px; background:var(--border); border-radius:16px; overflow:hidden; margin:48px 0 60px; border:1px solid var(--border);">
+        <div style="background:var(--bg-base); padding:28px 24px; text-align:center;">
+          <div style="font-size:38px; font-weight:900; letter-spacing:-1.5px; line-height:1; margin-bottom:8px;" class="grad-text">46</div>
+          <div style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Technical signal outputs</div>
+          <div style="font-size:11px; color:var(--text-muted);">Bollinger + Volume + RSI + MACD</div>
+        </div>
+        <div style="background:var(--bg-base); padding:28px 24px; text-align:center;">
+          <div style="font-size:38px; font-weight:900; letter-spacing:-1.5px; line-height:1; margin-bottom:8px;" class="grad-text">×6</div>
+          <div style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Timeframes recomputed</div>
+          <div style="font-size:11px; color:var(--text-muted);">1D · 5D · 1M · 3M · 6M · 1Y</div>
+        </div>
+        <div style="background:var(--bg-base); padding:28px 24px; text-align:center;">
+          <div style="font-size:38px; font-weight:900; letter-spacing:-1.5px; line-height:1; margin-bottom:8px;" class="grad-text">+104</div>
+          <div style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Cross-sectional + macro</div>
+          <div style="font-size:11px; color:var(--text-muted);">Regime · Breadth · Options · VIX · Sector · Align · Corr · X-Asset · PEAD</div>
+        </div>
+        <div style="background:var(--bg-surface); padding:28px 24px; text-align:center; border-left:1px solid rgba(99,102,241,0.3);">
+          <div style="font-size:38px; font-weight:900; letter-spacing:-1.5px; line-height:1; margin-bottom:8px; background:linear-gradient(135deg,#6366f1,#22d3ee); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">380+</div>
+          <div style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Data points per ticker</div>
+          <div style="font-size:11px; color:var(--text-muted);">276 technical + 104 structural</div>
+        </div>
+      </div>
+
+      <!-- CATEGORY: TECHNICAL -->
+      <div style="margin-bottom:48px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+          <span style="font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--indigo);">📊 Technical</span>
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+          <span style="font-size:11px; font-family:'Menlo',monospace; color:var(--text-muted); background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.18); border-radius:4px; padding:2px 10px;">46 outputs × 6 timeframes = 276 per ticker</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:14px;">
+
+          <!-- Bollinger -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">Bollinger Band Position</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_bollinger.py</div>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                <span style="font-size:10px; font-weight:700; background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.25); color:var(--indigo); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">11 outputs</span>
+                <span style="font-size:10px; font-weight:700; background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); color:var(--cyan); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">×6 → 66</span>
+              </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip">upper_band</span><span class="sig-chip">middle_band</span><span class="sig-chip">lower_band</span><span class="sig-chip">current_price</span><span class="sig-chip">position</span><span class="sig-chip">position_pct</span><span class="sig-chip">band_width_pct</span><span class="sig-chip">squeeze</span><span class="sig-chip">period</span><span class="sig-chip">stddev_mult</span><span class="sig-chip">timeframe</span>
+            </div>
+          </div>
+
+          <!-- Volume -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">Volume Z-Score</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_volume.py</div>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                <span style="font-size:10px; font-weight:700; background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.25); color:var(--indigo); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">10 outputs</span>
+                <span style="font-size:10px; font-weight:700; background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); color:var(--cyan); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">×6 → 60</span>
+              </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip">today_volume</span><span class="sig-chip">mean_volume</span><span class="sig-chip">stddev_volume</span><span class="sig-chip">z_score</span><span class="sig-chip">percentile_rank</span><span class="sig-chip">relative_to_adv</span><span class="sig-chip">classification</span><span class="sig-chip">price_volume_confirm</span><span class="sig-chip">lookback_days</span><span class="sig-chip">timeframe</span>
+            </div>
+          </div>
+
+          <!-- RSI -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">RSI + Divergence Detection</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_rsi.py</div>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                <span style="font-size:10px; font-weight:700; background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.25); color:var(--indigo); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">10 outputs</span>
+                <span style="font-size:10px; font-weight:700; background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); color:var(--cyan); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">×6 → 60</span>
+              </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip">current_rsi</span><span class="sig-chip">rsi_7d_trend</span><span class="sig-chip">overbought</span><span class="sig-chip">oversold</span><span class="sig-chip">divergence</span><span class="sig-chip">divergence_strength</span><span class="sig-chip">bars_since_last_divergence</span><span class="sig-chip">midline_cross_days</span><span class="sig-chip">period</span><span class="sig-chip">timeframe</span>
+            </div>
+          </div>
+
+          <!-- MACD -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">MACD Cross State</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_macd.py — richest single family</div>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                <span style="font-size:10px; font-weight:700; background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.25); color:var(--indigo); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">15 outputs</span>
+                <span style="font-size:10px; font-weight:700; background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); color:var(--cyan); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">×6 → 90</span>
+              </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip">macd_value</span><span class="sig-chip">signal_value</span><span class="sig-chip">histogram</span><span class="sig-chip">above_signal</span><span class="sig-chip">days_since_cross</span><span class="sig-chip">cross_type</span><span class="sig-chip">histogram_direction</span><span class="sig-chip">histogram_acceleration</span><span class="sig-chip">zero_line_position</span><span class="sig-chip">zero_line_cross_days</span><span class="sig-chip">divergence</span><span class="sig-chip">fast_period</span><span class="sig-chip">slow_period</span><span class="sig-chip">signal_period</span><span class="sig-chip">timeframe</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CATEGORY: CROSS-SECTIONAL -->
+      <div style="margin-bottom:48px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+          <span style="font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan);">🌐 Cross-Sectional</span>
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+          <span style="font-size:11px; font-family:'Menlo',monospace; color:var(--text-muted); background:rgba(34,211,238,0.06); border:1px solid rgba(34,211,238,0.18); border-radius:4px; padding:2px 10px;">44 outputs per ticker</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+
+          <!-- Correlation -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">Correlation Matrix</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_correlation.py</div>
+              </div>
+              <span style="font-size:10px; font-weight:700; background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); color:var(--cyan); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">9 outputs</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip cyan">avg_sector_corr</span><span class="sig-chip cyan">avg_market_corr</span><span class="sig-chip cyan">most_correlated</span><span class="sig-chip cyan">least_correlated</span><span class="sig-chip cyan">corr_zscore_vs_history</span><span class="sig-chip cyan">idiosyncratic_score</span><span class="sig-chip cyan">regime_flag</span><span class="sig-chip cyan">ticker</span><span class="sig-chip cyan">window_days</span>
+            </div>
+          </div>
+
+          <!-- Sector Relative -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">Sector-Relative Returns</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_sector_relative.py</div>
+              </div>
+              <span style="font-size:10px; font-weight:700; background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); color:var(--cyan); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">25 sub-values</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip cyan">per_tf_absolute[×6]</span><span class="sig-chip cyan">per_tf_vs_sector[×6]</span><span class="sig-chip cyan">per_tf_vs_market[×6]</span><span class="sig-chip cyan">per_tf_sector_rank</span><span class="sig-chip cyan">per_tf_rank_pct</span><span class="sig-chip cyan">is_sector_leader</span><span class="sig-chip cyan">is_sector_laggard</span><span class="sig-chip cyan">momentum_shift</span><span class="sig-chip cyan">sector_etf</span>
+            </div>
+          </div>
+
+          <!-- Alignment -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">Timeframe Alignment</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_alignment.py</div>
+              </div>
+              <span style="font-size:10px; font-weight:700; background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); color:var(--cyan); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">10 outputs</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip cyan">alignment_score</span><span class="sig-chip cyan">weighted_alignment_score</span><span class="sig-chip cyan">bullish_count</span><span class="sig-chip cyan">bearish_count</span><span class="sig-chip cyan">neutral_count</span><span class="sig-chip cyan">pattern</span><span class="sig-chip cyan">conviction_tier</span><span class="sig-chip cyan">per_tf_signals[×6]</span><span class="sig-chip cyan">per_tf_confidences[×6]</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CATEGORY: MACRO / RISK + VOLATILITY -->
+      <div style="margin-bottom:48px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+          <span style="font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--yellow);">🏛️ Macro · Risk · Volatility</span>
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+          <span style="font-size:11px; font-family:'Menlo',monospace; color:var(--text-muted); background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.18); border-radius:4px; padding:2px 10px;">44 outputs · market-wide</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+
+          <!-- Regime -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">HMM Regime (5-state)</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_regime.py</div>
+              </div>
+              <span style="font-size:10px; font-weight:700; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); color:var(--yellow); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">13 outputs</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip yellow">prob_risk_on</span><span class="sig-chip yellow">prob_risk_off</span><span class="sig-chip yellow">prob_transitional</span><span class="sig-chip yellow">prob_flight_to_quality</span><span class="sig-chip yellow">prob_euphoria</span><span class="sig-chip yellow">dominant_regime</span><span class="sig-chip yellow">dominant_confidence</span><span class="sig-chip yellow">days_in_current_regime</span><span class="sig-chip yellow">transition_probability_24h</span><span class="sig-chip yellow">transition_target</span><span class="sig-chip yellow">evidence_features</span><span class="sig-chip yellow">model_version</span><span class="sig-chip yellow">as_of_date</span>
+            </div>
+          </div>
+
+          <!-- Breadth -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">Breadth Oscillators</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_breadth.py</div>
+              </div>
+              <span style="font-size:10px; font-weight:700; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); color:var(--yellow); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">14 outputs</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip yellow">pct_above_50d_ma</span><span class="sig-chip yellow">pct_above_200d_ma</span><span class="sig-chip yellow">breadth_ema_5d</span><span class="sig-chip yellow">breadth_ema_20d</span><span class="sig-chip yellow">breadth_momentum_5d</span><span class="sig-chip yellow">breadth_momentum_20d</span><span class="sig-chip yellow">zweig_breadth_thrust</span><span class="sig-chip yellow">zweig_days_since_trigger</span><span class="sig-chip yellow">mcclellan_oscillator</span><span class="sig-chip yellow">mcclellan_summation</span><span class="sig-chip yellow">new_highs_vs_new_lows</span><span class="sig-chip yellow">divergence_flag</span><span class="sig-chip yellow">universe</span><span class="sig-chip yellow">as_of_date</span>
+            </div>
+          </div>
+
+          <!-- Options Sentiment -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">Options Sentiment</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_options_sentiment.py</div>
+              </div>
+              <span style="font-size:10px; font-weight:700; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); color:var(--yellow); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">9 outputs</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip yellow">equity_pc_ratio</span><span class="sig-chip yellow">index_pc_ratio</span><span class="sig-chip yellow">total_pc_ratio</span><span class="sig-chip yellow">ema_5d</span><span class="sig-chip yellow">ema_21d</span><span class="sig-chip yellow">zscore_6m</span><span class="sig-chip yellow">classification</span><span class="sig-chip yellow">contrarian_signal</span><span class="sig-chip yellow">vix_put_call_divergence</span>
+            </div>
+          </div>
+
+          <!-- VIX Term -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">VIX Term Structure</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_vix_term.py</div>
+              </div>
+              <span style="font-size:10px; font-weight:700; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); color:var(--yellow); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">8 outputs</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip yellow">vix_9d</span><span class="sig-chip yellow">vix_spot</span><span class="sig-chip yellow">vix_3m</span><span class="sig-chip yellow">vix_6m</span><span class="sig-chip yellow">term_shape</span><span class="sig-chip yellow">contango_slope</span><span class="sig-chip yellow">backwardation_days</span><span class="sig-chip yellow">regime_cue</span>
+            </div>
+          </div>
+
+          <!-- Cross Asset -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px; grid-column:span 2;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">Cross-Asset Signals</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_cross_asset.py — rates · FX · commodities · credit</div>
+              </div>
+              <span style="font-size:10px; font-weight:700; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); color:var(--yellow); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">14 outputs</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip yellow">dgs10</span><span class="sig-chip yellow">dgs2</span><span class="sig-chip yellow">dgs3mo</span><span class="sig-chip yellow">yield_curve_2s10s</span><span class="sig-chip yellow">yield_curve_shape</span><span class="sig-chip yellow">yield_curve_regime_cue</span><span class="sig-chip yellow">dxy_level</span><span class="sig-chip yellow">dxy_5d_change_pct</span><span class="sig-chip yellow">dxy_equity_correlation</span><span class="sig-chip yellow">gold_price</span><span class="sig-chip yellow">gold_5d_change_pct</span><span class="sig-chip yellow">gold_divergence</span><span class="sig-chip yellow">hy_oas</span><span class="sig-chip yellow">credit_stress</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CATEGORY: EVENT-DRIVEN -->
+      <div style="margin-bottom:0;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+          <span style="font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--green-dim);">📅 Event-Driven</span>
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+          <span style="font-size:11px; font-family:'Menlo',monospace; color:var(--text-muted); background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.18); border-radius:4px; padding:2px 10px;">8 outputs per ticker</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:14px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div>
+                <div style="font-size:14px; font-weight:800; margin-bottom:2px;">Earnings Surprise + PEAD</div>
+                <div style="font-size:11px; color:var(--text-muted);">features_earnings_surprise.py — post-earnings drift window</div>
+              </div>
+              <span style="font-size:10px; font-weight:700; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); color:var(--green-dim); border-radius:4px; padding:2px 9px; font-family:'Menlo',monospace;">8 outputs</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <span class="sig-chip green">eps_surprise_pct</span><span class="sig-chip green">eps_surprise_zscore</span><span class="sig-chip green">beat_category</span><span class="sig-chip green">guidance_change</span><span class="sig-chip green">pead_window</span><span class="sig-chip green">reaction_vs_surprise</span><span class="sig-chip green">days_to_next_report</span><span class="sig-chip green">ticker</span>
+            </div>
+          </div>
+
+          <!-- total callout -->
+          <div style="background:rgba(99,102,241,0.05); border:1px solid rgba(99,102,241,0.25); border-radius:14px; padding:28px 32px; display:flex; flex-direction:column; justify-content:center;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--indigo); margin-bottom:20px;">Total per ticker</div>
+            <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; font-family:'Menlo',monospace; color:var(--text-secondary);">
+              <div style="display:flex; justify-content:space-between;"><span>Technical (×6 tf)</span><span style="color:var(--indigo);">276</span></div>
+              <div style="display:flex; justify-content:space-between;"><span>Cross-sectional</span><span style="color:var(--cyan);">44</span></div>
+              <div style="display:flex; justify-content:space-between;"><span>Macro + Volatility</span><span style="color:var(--yellow);">44</span></div>
+              <div style="display:flex; justify-content:space-between;"><span>Event-driven</span><span style="color:var(--green-dim);">8</span></div>
+              <div style="height:1px; background:rgba(99,102,241,0.2); margin:4px 0;"></div>
+              <div style="display:flex; justify-content:space-between; font-size:18px; font-weight:800;"><span style="color:var(--text-primary);">Per ticker</span><span style="background:linear-gradient(135deg,#6366f1,#22d3ee); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">372</span></div>
+              <div style="display:flex; justify-content:space-between; margin-top:4px;"><span>× 270 symbol universe</span><span style="color:var(--text-primary); font-weight:700;">~89k runs</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TIMEFRAMES -->
+  <section class="section">
+    <p class="section-eyebrow">Multi-Timeframe Analysis</p>
+    <h2 class="section-title">Six horizons. <span class="grad-text">One aligned view.</span></h2>
+    <p class="section-sub">
+      Every signal is computed independently across six lookback windows.
+      The resulting alignment score tells you whether short-term momentum and
+      long-term trend are pointing the same direction — or fighting each other.
+    </p>
+
+    <div class="tf-grid">
+      <div class="tf-card">
+        <div class="tf-label grad-text">1D</div>
+        <div class="tf-name">Intraday</div>
+        <div class="tf-desc">Noise-heavy but catches breakout day signals. Weighted lower in alignment scoring.</div>
+        <div class="tf-badge">t = 1</div>
+      </div>
+      <div class="tf-card">
+        <div class="tf-label grad-text">5D</div>
+        <div class="tf-name">Weekly</div>
+        <div class="tf-desc">Primary swing timeframe. MACD crosses and volume Z-scores are most actionable here.</div>
+        <div class="tf-badge">t = 5</div>
+      </div>
+      <div class="tf-card">
+        <div class="tf-label grad-text">1M</div>
+        <div class="tf-name">Monthly</div>
+        <div class="tf-desc">Confirms weekly signals. RSI divergence patterns resolve over this window.</div>
+        <div class="tf-badge">t = 21</div>
+      </div>
+      <div class="tf-card">
+        <div class="tf-label grad-text">3M</div>
+        <div class="tf-name">Quarterly</div>
+        <div class="tf-desc">Earnings cycles. Regime transitions and sector rotation show up clearly.</div>
+        <div class="tf-badge">t = 63</div>
+      </div>
+      <div class="tf-card">
+        <div class="tf-label grad-text">6M</div>
+        <div class="tf-name">Semi-annual</div>
+        <div class="tf-desc">Cross-asset and correlation signals dominate. Sector-relative trends stabilize.</div>
+        <div class="tf-badge">t = 126</div>
+      </div>
+      <div class="tf-card">
+        <div class="tf-label grad-text">1Y</div>
+        <div class="tf-name">Annual</div>
+        <div class="tf-desc">Long-term trend baseline. Used to detect short_bear_long_bull divergence setups.</div>
+        <div class="tf-badge">t = 252</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COUNCIL SECTION -->
+  <section class="council-bg" id="council">
+    <div class="section">
+      <p class="section-eyebrow">AI Council</p>
+      <h2 class="section-title">Six agents. <span class="grad-text">Two parallel tracks.</span></h2>
+      <p class="section-sub">
+        No single model makes the call. Every ticker runs through a Swing Council
+        (short-term) and a Growth Council (long-term) simultaneously — each with
+        two specialized agents deliberating in sequence before issuing a verdict.
+      </p>
+
+      <div class="parallel-indicator">
+        <div class="badge">⚡ Parallel execution — both tracks run simultaneously per ticker</div>
+        <p>Each track runs agents A→B in series internally. The tracks themselves are independent.</p>
+      </div>
+
+      <div class="council-tracks">
+
+        <!-- SWING TRACK -->
+        <div class="track">
+          <div class="track-header">
+            <div>
+              <div class="track-label">Track A · Swing Council</div>
+              <div class="track-title">Short-Term Edge</div>
+            </div>
+            <div class="track-horizon">1–5 day horizon</div>
+          </div>
+
+          <div class="track-body">
+            <div class="agent-card">
+              <div class="agent-header">
+                <div class="agent-id id-a1">A1</div>
+                <div>
+                  <div class="agent-name">Swing Discovery Agent</div>
+                  <div class="agent-role">Deterministic feature scorer</div>
+                </div>
+              </div>
+              <p class="agent-desc">
+                Runs all 13 signal families through a weighted scoring algorithm.
+                Produces a discovery score, directional call (long/short/neutral),
+                and a prioritized list of supporting and counter evidence.
+              </p>
+              <div class="agent-tags">
+                <span class="tag">bollinger</span>
+                <span class="tag">rsi</span>
+                <span class="tag">macd</span>
+                <span class="tag">volume</span>
+                <span class="tag">correlation</span>
+                <span class="tag">regime</span>
+                <span class="tag">alignment</span>
+                <span class="tag">sector_rel</span>
+                <span class="tag">breadth</span>
+                <span class="tag">options_sentiment</span>
+                <span class="tag">vix_term</span>
+                <span class="tag">cross_asset</span>
+              </div>
+            </div>
+
+            <div class="arrow-connector">
+              <div class="arrow-line"></div>
+              <span>A1 output feeds A2</span>
+              <div class="arrow-line"></div>
+            </div>
+
+            <div class="agent-card">
+              <div class="agent-header">
+                <div class="agent-id id-a2">A2</div>
+                <div>
+                  <div class="agent-name">Swing Critic Agent</div>
+                  <div class="agent-role">Rule-based decision refinement</div>
+                </div>
+              </div>
+              <p class="agent-desc">
+                Applies risk penalties, stale-data flags, and reward/risk estimation
+                to A1's raw score. Issues entry zones, invalidation levels, and R:R
+                ratios. Verdict: <span class="mono" style="font-size:12px;color:#a5b4fc;">reject · needs_review · pass · watch · mutate</span>
+              </p>
+              <div class="agent-tags">
+                <span class="tag">risk penalties</span>
+                <span class="tag">stale data</span>
+                <span class="tag">entry zone</span>
+                <span class="tag">invalidation</span>
+                <span class="tag">R:R estimate</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="track-output">
+            <div class="output-label">Track A Output — FinalSwingDecision</div>
+            <div class="output-fields">
+              <span class="output-field">decision</span>
+              <span class="output-field">total_score</span>
+              <span class="output-field">discovery_score</span>
+              <span class="output-field">critique_score</span>
+              <span class="output-field">risk_flags</span>
+              <span class="output-field">blockers</span>
+              <span class="output-field">supporting_evidence</span>
+              <span class="output-field">counter_evidence</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- GROWTH TRACK -->
+        <div class="track">
+          <div class="track-header">
+            <div>
+              <div class="track-label">Track B · Growth Council</div>
+              <div class="track-title">Long-Term Quality</div>
+            </div>
+            <div class="track-horizon">2–5 year horizon</div>
+          </div>
+
+          <div class="track-body">
+            <div class="agent-card">
+              <div class="agent-header">
+                <div class="agent-id id-b1">B1</div>
+                <div>
+                  <div class="agent-name">Growth Quality Agent</div>
+                  <div class="agent-role">Fundamental multi-dimension scorer</div>
+                </div>
+              </div>
+              <p class="agent-desc">
+                Scores 8 fundamental dimensions from income statements, balance sheets,
+                and cash flow data. Any hard reject flag (e.g. negative ROIC trend,
+                deteriorating balance sheet) immediately overrides the numeric score.
+              </p>
+              <div class="agent-tags">
+                <span class="tag">revenue growth</span>
+                <span class="tag">earnings quality</span>
+                <span class="tag">ROIC trend</span>
+                <span class="tag">moat durability</span>
+                <span class="tag">capital allocation</span>
+                <span class="tag">mgmt alignment</span>
+                <span class="tag">valuation</span>
+                <span class="tag">balance sheet</span>
+              </div>
+            </div>
+
+            <div class="arrow-connector">
+              <div class="arrow-line"></div>
+              <span>B1 output feeds B2</span>
+              <div class="arrow-line"></div>
+            </div>
+
+            <div class="agent-card">
+              <div class="agent-header">
+                <div class="agent-id id-b2">B2</div>
+                <div>
+                  <div class="agent-name">Growth Tax Risk Agent</div>
+                  <div class="agent-role">Tax & risk penalty applier</div>
+                </div>
+              </div>
+              <p class="agent-desc">
+                Adjusts B1's quality score for tax-related risks, stale fundamental data,
+                and structural risk flags. Issues a direction: <span class="mono" style="font-size:12px;color:#a5b4fc;">accumulate · hold · avoid</span>
+              </p>
+              <div class="agent-tags">
+                <span class="tag">tax risk</span>
+                <span class="tag">stale fundamentals</span>
+                <span class="tag">hard rejects</span>
+                <span class="tag">direction</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="track-output">
+            <div class="output-label">Track B Output — FinalGrowthDecision</div>
+            <div class="output-fields">
+              <span class="output-field">decision</span>
+              <span class="output-field">total_score</span>
+              <span class="output-field">quality_score</span>
+              <span class="output-field">tax_risk_score</span>
+              <span class="output-field">direction</span>
+              <span class="output-field">hard_rejects</span>
+              <span class="output-field">risk_flags</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MACRO AGENTS -->
+      <div style="margin-top: 40px;">
+        <p style="font-size: 13px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px;">+ Market Context Layer</p>
+        <div class="macro-agents">
+          <div class="macro-card">
+            <div class="macro-icon">🌍</div>
+            <h3 class="macro-title">Macro Agent</h3>
+            <p class="macro-desc">
+              Synthesizes cross-asset signals, yield curve shape, DXY trend, credit spreads,
+              and HMM regime state into a macro backdrop that both councils reference before scoring.
+              A risk_off regime increases penalty weights across all swing signals.
+            </p>
+          </div>
+          <div class="macro-card">
+            <div class="macro-icon">📡</div>
+            <h3 class="macro-title">Market Overview Agent</h3>
+            <p class="macro-desc">
+              Provides aggregate market health: breadth oscillators (Zweig thrust, McClellan),
+              advance/decline ratios, new highs/lows, and overall market momentum.
+              Used to assess whether individual signals are swimming with or against the tide.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- VERDICT FLOW -->
+      <div class="verdict-flow">
+        <div class="vf-step">
+          <div class="vf-icon">📥</div>
+          <div class="vf-title">Ticker Input</div>
+          <div class="vf-sub">Watchlist symbol</div>
+        </div>
+        <div class="vf-arrow">→</div>
+        <div class="vf-step">
+          <div class="vf-icon">🧠</div>
+          <div class="vf-title">Signal Engine</div>
+          <div class="vf-sub">78 data points computed</div>
+        </div>
+        <div class="vf-arrow">→</div>
+        <div class="vf-step">
+          <div class="vf-icon">⚡</div>
+          <div class="vf-title">Parallel Councils</div>
+          <div class="vf-sub">Track A + Track B simultaneously</div>
+        </div>
+        <div class="vf-arrow">→</div>
+        <div class="vf-step">
+          <div class="vf-icon">⚖️</div>
+          <div class="vf-title">Score Merge</div>
+          <div class="vf-sub">Swing + Growth weighted</div>
+        </div>
+        <div class="vf-arrow">→</div>
+        <div class="vf-step">
+          <div class="vf-icon">🎯</div>
+          <div class="vf-title">Final Verdict</div>
+          <div class="vf-sub">accept · watch · review · reject</div>
+        </div>
+      </div>
+
+      <!-- EXAMPLE VERDICTS -->
+      <div class="verdicts-grid">
+        <div class="verdict-card">
+          <div class="v-symbol">NVDA</div>
+          <div class="v-price">$897.23</div>
+          <div class="v-verdict v-accept">ACCEPT</div>
+          <div class="v-swing">Swing: pass · 0.91</div>
+          <div class="v-growth">Growth: accumulate · 0.88</div>
+          <div class="v-score">Total: 0.895 · no blockers</div>
+        </div>
+        <div class="verdict-card">
+          <div class="v-symbol">META</div>
+          <div class="v-price">$491.40</div>
+          <div class="v-verdict v-watch">WATCHLIST</div>
+          <div class="v-swing">Swing: watch · 0.72</div>
+          <div class="v-growth">Growth: hold · 0.75</div>
+          <div class="v-score">Total: 0.735 · 1 flag</div>
+        </div>
+        <div class="verdict-card">
+          <div class="v-symbol">BTC</div>
+          <div class="v-price">$67,810</div>
+          <div class="v-verdict v-review">NEEDS REVIEW</div>
+          <div class="v-swing">Swing: needs_review · 0.55</div>
+          <div class="v-growth">Growth: avoid · 0.41</div>
+          <div class="v-score">Total: 0.48 · regime conflict</div>
+        </div>
+        <div class="verdict-card">
+          <div class="v-symbol">COIN</div>
+          <div class="v-price">$218.50</div>
+          <div class="v-verdict v-reject">REJECT</div>
+          <div class="v-swing">Swing: reject · 0.28</div>
+          <div class="v-growth">Growth: avoid · 0.31</div>
+          <div class="v-score">Total: 0.295 · hard reject</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- MOBILE RAG COUNCIL -->
+  <section class="section" id="rag">
+    <p class="section-eyebrow">Mobile Council</p>
+    <h2 class="section-title">On-demand deliberation.<br /><span class="grad-text">In your pocket.</span></h2>
+    <p class="section-sub">
+      Alongside the backend signal engine, the mobile app surfaces a separate RAG-powered
+      council you can consult on any ticker, any thesis, any time. Ask a question and
+      two specialized perspectives weigh in — then a synthesis agent reconciles them.
+    </p>
+
+    <div class="rag-grid">
+
+      <div class="rag-card">
+        <div class="rag-tag">T1 · Short-Term Council</div>
+        <h3 class="rag-title">The Trader</h3>
+        <p class="rag-desc">
+          Analyzes your query through the lens of a 1–5 day swing trader.
+          Prioritizes momentum, entry timing, and near-term catalysts.
+          Pulls live signal data and recent news into its context window.
+        </p>
+        <div class="rag-focuses">
+          <div class="rag-focus"><span class="dot-focus"></span>MACD, RSI, volume confirmation</div>
+          <div class="rag-focus"><span class="dot-focus"></span>News sentiment + options flow</div>
+          <div class="rag-focus"><span class="dot-focus"></span>Entry, stop, target zones</div>
+          <div class="rag-focus"><span class="dot-focus"></span>Risk/reward and invalidation</div>
+        </div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-tag">T2 · Long-Term Council</div>
+        <h3 class="rag-title">The Investor</h3>
+        <p class="rag-desc">
+          Evaluates the same query through a 3–12 month investment horizon.
+          Grounds its view in fundamentals, sector dynamics, and macro regime —
+          without getting distracted by short-term noise.
+        </p>
+        <div class="rag-focuses">
+          <div class="rag-focus"><span class="dot-focus"></span>Revenue growth, ROIC, moat</div>
+          <div class="rag-focus"><span class="dot-focus"></span>Valuation vs. sector comps</div>
+          <div class="rag-focus"><span class="dot-focus"></span>Macro regime fit</div>
+          <div class="rag-focus"><span class="dot-focus"></span>Accumulate vs. hold vs. avoid</div>
+        </div>
+      </div>
+
+      <div class="rag-card t-agree">
+        <div class="rag-tag" style="background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3);">★ Agree · Synthesis</div>
+        <h3 class="rag-title">The Verdict</h3>
+        <p class="rag-desc">
+          Tap ★ Agree and a third pass synthesizes T1 and T2 into one defensible,
+          time-horizon-aware recommendation — resolving conflicts, noting where the
+          perspectives diverge, and stating exactly what would change the call.
+        </p>
+        <div class="rag-focuses">
+          <div class="rag-focus"><span class="dot-focus"></span>Conflict resolution when T1 ≠ T2</div>
+          <div class="rag-focus"><span class="dot-focus"></span>Unified recommendation with caveats</div>
+          <div class="rag-focus"><span class="dot-focus"></span>What would flip this verdict</div>
+          <div class="rag-focus"><span class="dot-focus"></span>Confidence score across horizons</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-wrap" id="cta">
+    <div class="cta-radial"></div>
+    <h2>
+      Institutional-grade analysis.<br />
+      <span class="grad-text">Without the institution.</span>
+    </h2>
+    <p>
+      Create your account to access the full signal engine,
+      AI council verdicts, and mobile council — start today.
+    </p>
+    <a href="https://accounts.nuwrrrld.com/sign-up" class="btn-primary" style="font-size: 18px; padding: 16px 44px; display: inline-block;">
+      Create your account — Free
+    </a>
+    <p style="margin-top: 16px; font-size: 13px; color: var(--text-muted);">
+      No credit card. No Bloomberg subscription required.
+    </p>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand">NuWrrrld Financial</div>
+    <ul class="footer-links">
+      <li><a href="index.html">Overview</a></li>
+      <li><a href="#">Privacy</a></li>
+      <li><a href="#">Terms</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+    <div class="footer-copy">© 2026 NuWrrrld Financial. All rights reserved.</div>
+  </footer>
+
+</body>
+</html>

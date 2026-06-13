@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NuWrrrld Financial - Mobile Market Council</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #08090c;
+      --ink: #f7f3ea;
+      --muted: #aba89e;
+      --dim: #747267;
+      --panel: rgba(18, 20, 25, 0.82);
+      --panel-solid: #121419;
+      --line: rgba(247, 243, 234, 0.14);
+      --line-strong: rgba(247, 243, 234, 0.24);
+      --blue: #4f7cff;
+      --cyan: #12c8d8;
+      --green: #35d07f;
+      --lime: #b9e34b;
+      --amber: #f4b83f;
+      --coral: #ff6b57;
+      --pink: #ef5da8;
+      --violet: #9b72ff;
+      --shadow: 0 22px 80px rgba(0, 0, 0, 0.34);
+      --radius: 8px;
+      --max: 1180px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+        radial-gradient(circle at 50% -10%, rgba(18, 200, 216, 0.18), transparent 42%),
+        linear-gradient(135deg, #08090c 0%, #12100e 46%, #071112 100%);
+      background-size: 36px 36px, 36px 36px, auto, auto;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    .mono {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    .topbar {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      padding: 14px clamp(18px, 4vw, 44px);
+      border-bottom: 1px solid var(--line);
+      background: rgba(8, 9, 12, 0.84);
+      backdrop-filter: blur(18px);
+      max-width: 100vw;
+      overflow: hidden;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      color: #06100b;
+      background: linear-gradient(135deg, var(--green), var(--amber));
+      font-size: 0.62rem;
+      font-weight: 950;
+      letter-spacing: -0.06em;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 10px 28px rgba(79,124,255,0.24);
+    }
+
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .navlinks a:hover {
+      color: var(--ink);
+    }
+
+    .nav-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 16px;
+      border: 1px solid rgba(53, 208, 127, 0.32);
+      border-radius: 999px;
+      color: #07110b;
+      background: var(--green);
+      font-weight: 900;
+      box-shadow: 0 12px 34px rgba(53, 208, 127, 0.24);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 88vh;
+      padding: 116px clamp(18px, 5vw, 64px) 40px;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .market-wall {
+      position: absolute;
+      inset: 72px 0 0;
+      z-index: -2;
+      opacity: 0.56;
+      background:
+        linear-gradient(90deg, rgba(8,9,12,0.96) 0%, rgba(8,9,12,0.34) 45%, rgba(8,9,12,0.94) 100%),
+        repeating-linear-gradient(90deg, transparent 0 80px, rgba(247,243,234,0.06) 80px 81px),
+        repeating-linear-gradient(0deg, transparent 0 46px, rgba(247,243,234,0.055) 46px 47px);
+    }
+
+    .market-wall::before {
+      content: "SPY +0.42   NVDA +1.87   VIX -3.18   QQQ +0.71   DXY -0.22   BTC +2.04   AAPL +0.39   SOXX +1.44   XLF -0.28";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 34px;
+      white-space: nowrap;
+      color: rgba(247,243,234,0.26);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: clamp(32px, 6vw, 96px);
+      font-weight: 900;
+      letter-spacing: -0.08em;
+      animation: wallDrift 38s linear infinite;
+    }
+
+    .market-wall::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, transparent 0 48%, rgba(53,208,127,0.18) 48.2% 48.8%, transparent 49%),
+        linear-gradient(26deg, transparent 0 59%, rgba(244,184,63,0.15) 59.2% 59.8%, transparent 60%),
+        linear-gradient(158deg, transparent 0 67%, rgba(255,107,87,0.14) 67.2% 67.8%, transparent 68%);
+    }
+
+    @keyframes wallDrift {
+      from { transform: translateX(0); }
+      to { transform: translateX(-54%); }
+    }
+
+    .hero-inner {
+      width: min(var(--max), 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 28px;
+      justify-items: center;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 13px;
+      border: 1px solid rgba(244,184,63,0.34);
+      border-radius: 999px;
+      background: rgba(244,184,63,0.08);
+      color: #ffd983;
+      font-size: 0.75rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: min(920px, calc(100vw - 36px));
+      font-size: clamp(3rem, 7vw, 7rem);
+      line-height: 0.86;
+      letter-spacing: -0.08em;
+      text-wrap: balance;
+    }
+
+    h1 span {
+      display: block;
+    }
+
+    .hero-copy {
+      max-width: min(760px, calc(100vw - 36px));
+      color: #ddd8c9;
+      font-size: clamp(1.05rem, 2vw, 1.34rem);
+      line-height: 1.65;
+      text-wrap: balance;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      max-width: calc(100vw - 36px);
+      margin-top: 2px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 900;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn.primary {
+      color: #06100b;
+      background: var(--green);
+      box-shadow: 0 18px 50px rgba(53,208,127,0.28);
+    }
+
+    .btn.secondary {
+      border: 1px solid var(--line-strong);
+      color: var(--ink);
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .product-stage {
+      width: min(1040px, calc(100vw - 36px));
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: 0.82fr 1fr 0.82fr;
+      gap: clamp(12px, 2vw, 22px);
+      align-items: end;
+      perspective: 1200px;
+    }
+
+    .phone {
+      border: 1px solid rgba(247,243,234,0.18);
+      border-radius: 34px;
+      background: linear-gradient(180deg, #22262d, #090b0f);
+      box-shadow: var(--shadow), inset 0 0 0 8px #050609;
+      overflow: hidden;
+    }
+
+    .phone.side {
+      transform: translateY(22px) rotateY(10deg) scale(0.92);
+      opacity: 0.84;
+    }
+
+    .phone.side.right {
+      transform: translateY(22px) rotateY(-10deg) scale(0.92);
+    }
+
+    .phone.main {
+      min-height: 472px;
+    }
+
+    .screen {
+      min-height: 420px;
+      padding: 28px 18px 18px;
+      background:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(180deg, #111722 0%, #17140f 100%);
+      background-size: 22px 22px, auto;
+    }
+
+    .statusbar {
+      display: flex;
+      justify-content: space-between;
+      color: var(--dim);
+      font-size: 0.72rem;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    .app-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .app-title strong {
+      font-size: 1.3rem;
+      letter-spacing: -0.04em;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(53,208,127,0.34);
+      color: #96f3bd;
+      background: rgba(53,208,127,0.1);
+      font-size: 0.64rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .brief-card,
+    .mini-card {
+      border: 1px solid rgba(247,243,234,0.12);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.055);
+      padding: 14px;
+    }
+
+    .brief-card {
+      margin-bottom: 12px;
+    }
+
+    .label {
+      color: var(--dim);
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .big-number {
+      font-size: 2.3rem;
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: -0.08em;
+    }
+
+    .up { color: var(--green); }
+    .down { color: var(--coral); }
+    .flat { color: var(--amber); }
+
+    .brief-text {
+      margin-top: 10px;
+      color: #d8d3c6;
+      font-size: 0.87rem;
+      line-height: 1.55;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .mini-card strong {
+      display: block;
+      font-size: 1.05rem;
+      letter-spacing: -0.04em;
+      margin-bottom: 4px;
+    }
+
+    .mini-card span {
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .signal-row {
+      display: grid;
+      grid-template-columns: 54px 1fr 54px;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.78rem;
+    }
+
+    .signal-row:last-child {
+      border-bottom: 0;
+    }
+
+    .signal-row b {
+      font-size: 0.9rem;
+    }
+
+    .bar {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+    }
+
+    .council-bubble {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 14px 14px 14px 4px;
+      color: #dcd8cc;
+      background: rgba(79,124,255,0.12);
+      border: 1px solid rgba(79,124,255,0.22);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .peek-band {
+      width: min(var(--max), calc(100% - 36px));
+      margin: -10px auto 0;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      border: 1px solid var(--line);
+      background: var(--line);
+      position: relative;
+      z-index: 2;
+    }
+
+    .metric {
+      min-height: 92px;
+      padding: 18px;
+      background: rgba(12, 14, 18, 0.94);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.56rem;
+      letter-spacing: -0.06em;
+      margin-bottom: 4px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    section {
+      position: relative;
+      padding: 96px clamp(18px, 5vw, 64px);
+    }
+
+    .wrap {
+      width: min(var(--max), 100%);
+      margin: 0 auto;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.72fr) minmax(260px, 0.28fr);
+      gap: 32px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .kicker {
+      color: var(--amber);
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      max-width: 820px;
+      font-size: clamp(2.1rem, 5vw, 4.8rem);
+      line-height: 0.98;
+      letter-spacing: -0.075em;
+      text-wrap: balance;
+    }
+
+    .section-copy {
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.7;
+    }
+
+    .surface-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .surface {
+      min-height: 300px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 12px 42px rgba(0,0,0,0.16);
+      overflow: hidden;
+    }
+
+    .surface.wide {
+      grid-column: span 2;
+    }
+
+    .surface h3 {
+      font-size: 1.4rem;
+      line-height: 1.1;
+      letter-spacing: -0.05em;
+      margin-bottom: 10px;
+    }
+
+    .surface p {
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.62;
+      margin-bottom: 18px;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 9px;
+      list-style: none;
+    }
+
+    .feature-list li {
+      display: flex;
+      gap: 9px;
+      color: #d9d4c7;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .feature-list li::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      margin-top: 0.52em;
+      border-radius: 50%;
+      background: var(--green);
+      flex: 0 0 auto;
+    }
+
+    .screen-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .screen-chip {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .screen-chip b {
+      display: block;
+      font-size: 1.1rem;
+      letter-spacing: -0.05em;
+    }
+
+    .screen-chip span {
+      color: var(--dim);
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .engine {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+        #0c0e12;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .matrix {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #0a0b0f;
+      box-shadow: var(--shadow);
+    }
+
+    .matrix-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #121419;
+    }
+
+    .matrix-head strong {
+      letter-spacing: -0.04em;
+    }
+
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 1.4fr repeat(6, 0.7fr);
+      min-width: 760px;
+    }
+
+    .matrix-cell {
+      padding: 12px;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .matrix-cell:nth-child(7n) {
+      border-right: 0;
+    }
+
+    .matrix-cell.head {
+      color: var(--dim);
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .matrix-cell.name {
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .verdict {
+      display: inline-flex;
+      justify-content: center;
+      min-width: 46px;
+      padding: 4px 7px;
+      border-radius: 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+
+    .buy {
+      color: #9af3c0;
+      background: rgba(53,208,127,0.12);
+      border: 1px solid rgba(53,208,127,0.3);
+    }
+
+    .hold {
+      color: #f8d78a;
+      background: rgba(244,184,63,0.12);
+      border: 1px solid rgba(244,184,63,0.28);
+    }
+
+    .sell {
+      color: #ffafa3;
+      background: rgba(255,107,87,0.12);
+      border: 1px solid rgba(255,107,87,0.28);
+    }
+
+    .engine-bottom {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .engine-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .engine-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1.1rem;
+      letter-spacing: -0.04em;
+    }
+
+    .engine-card span {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .council-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .council-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      padding: 22px;
+    }
+
+    .council-panel h3 {
+      font-size: 1.45rem;
+      letter-spacing: -0.05em;
+      margin-bottom: 8px;
+    }
+
+    .horizon-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .horizon {
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.11);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.045);
+    }
+
+    .horizon b {
+      display: block;
+      color: var(--green);
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    .horizon span {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .chat-demo {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .chat {
+      max-width: 90%;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      color: #ddd9cd;
+      background: rgba(255,255,255,0.055);
+      font-size: 0.9rem;
+    }
+
+    .chat.user {
+      justify-self: end;
+      border-color: rgba(18,200,216,0.28);
+      background: rgba(18,200,216,0.1);
+    }
+
+    .chat.ai {
+      justify-self: start;
+      border-radius: 14px 14px 14px 4px;
+    }
+
+    .pipeline {
+      background: #f4efe3;
+      color: #171713;
+    }
+
+    .pipeline .kicker,
+    .pipeline .section-copy {
+      color: #756b58;
+    }
+
+    .pipeline h2 {
+      color: #161512;
+    }
+
+    .pipeline-map {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .pipe-node {
+      position: relative;
+      min-height: 172px;
+      padding: 16px;
+      border: 1px solid rgba(23,23,19,0.14);
+      border-top: 6px solid var(--blue);
+      border-radius: var(--radius);
+      background: #fffaf0;
+      box-shadow: 0 12px 28px rgba(33,28,20,0.08);
+    }
+
+    .pipe-node:nth-child(2) { border-top-color: var(--cyan); }
+    .pipe-node:nth-child(3) { border-top-color: var(--green); }
+    .pipe-node:nth-child(4) { border-top-color: var(--amber); }
+    .pipe-node:nth-child(5) { border-top-color: var(--coral); }
+    .pipe-node:nth-child(6) { border-top-color: var(--violet); }
+
+    .pipe-node b {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.08rem;
+      letter-spacing: -0.04em;
+    }
+
+    .pipe-node span {
+      color: #6f675a;
+      font-size: 0.87rem;
+      line-height: 1.55;
+    }
+
+    .proof-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .proof {
+      min-height: 260px;
+      border: 1px solid rgba(23,23,19,0.14);
+      border-radius: var(--radius);
+      padding: 22px;
+      background: #fffaf0;
+    }
+
+    .proof h3 {
+      margin-bottom: 10px;
+      font-size: 1.3rem;
+      letter-spacing: -0.05em;
+    }
+
+    .proof p {
+      color: #6f675a;
+      margin-bottom: 16px;
+    }
+
+    .proof-list {
+      display: grid;
+      gap: 10px;
+      list-style: none;
+    }
+
+    .proof-list li {
+      padding: 10px 12px;
+      border-radius: 6px;
+      color: #2b2923;
+      background: rgba(22, 21, 18, 0.045);
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .audience {
+      min-height: 220px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+
+    .audience span {
+      display: inline-flex;
+      margin-bottom: 18px;
+      color: var(--amber);
+      font-size: 0.76rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .audience h3 {
+      font-size: 1.2rem;
+      letter-spacing: -0.05em;
+      margin-bottom: 10px;
+    }
+
+    .audience p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .cta {
+      min-height: 74vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
+        #0a0b0f;
+      background-size: 30px 30px;
+      border-top: 1px solid var(--line);
+    }
+
+    .cta h2 {
+      margin: 0 auto 18px;
+    }
+
+    .cta p {
+      max-width: 660px;
+      margin: 0 auto 28px;
+      color: var(--muted);
+      font-size: 1.1rem;
+      line-height: 1.7;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 28px clamp(18px, 5vw, 64px);
+      border-top: 1px solid var(--line);
+      color: var(--dim);
+      font-size: 0.86rem;
+    }
+
+    .fade {
+      opacity: 1;
+      transform: translateY(0);
+      animation: none;
+    }
+
+    .d1 { animation-delay: 0.08s; }
+    .d2 { animation-delay: 0.16s; }
+    .d3 { animation-delay: 0.24s; }
+    .d4 { animation-delay: 0.32s; }
+
+    @keyframes fadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (max-width: 1060px) {
+      .product-stage {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .phone.main {
+        grid-column: span 2;
+        order: -1;
+      }
+
+      .surface-grid,
+      .engine-bottom,
+      .audience-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .pipeline-map {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 780px) {
+      .topbar {
+        min-height: 64px;
+      }
+
+      .navlinks {
+        gap: 0;
+      }
+
+      .navlinks a:not(.nav-action) {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 92px;
+        min-height: auto;
+      }
+
+      h1 {
+        font-size: clamp(2.75rem, 12.5vw, 4.25rem);
+        line-height: 0.94;
+        letter-spacing: -0.07em;
+      }
+
+      .product-stage,
+      .phone.main,
+      .section-head,
+      .surface-grid,
+      .surface.wide,
+      .council-layout,
+      .proof-grid,
+      .audience-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-column: auto;
+      }
+
+      .phone.side,
+      .phone.side.right {
+        display: none;
+      }
+
+      .peek-band,
+      .engine-bottom,
+      .pipeline-map {
+        grid-template-columns: 1fr;
+      }
+
+      .horizon-grid,
+      .screen-row {
+        grid-template-columns: 1fr;
+      }
+
+      .matrix-grid {
+        min-width: 720px;
+      }
+
+      section {
+        padding-top: 72px;
+        padding-bottom: 72px;
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .brand > span:not(.brand-mark) {
+        display: none;
+      }
+
+      .nav-action {
+        min-height: 36px;
+        padding: 0 12px;
+        font-size: 0.82rem;
+      }
+
+      .phone.main {
+        min-height: 0;
+      }
+
+      .screen {
+        min-height: 0;
+      }
+
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="topbar" aria-label="Primary navigation">
+    <a class="brand" href="index3.html">
+      <span class="brand-mark" aria-hidden="true">NWF</span>
+      <span>NuWrrrld Financial</span>
+    </a>
+    <div class="navlinks">
+      <a href="#product">Product</a>
+      <a href="#engine">Signals</a>
+      <a href="#council">Council</a>
+      <a href="#pipeline">Pipeline</a>
+      <a class="nav-action" href="#access">Access</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="market-wall" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="eyebrow fade">Advanced AI-Native Financial Tools</div>
+      <h1 class="fade d1"><span>NuWrrrld</span> <span>Financial</span></h1>
+      <p class="hero-copy fade d2">
+        The caring command center for active investors — market briefings, macro regime reads,
+        signal matrices, Hold/Fold trade verdicts, and an AI council that reasons across every
+        horizon from one day to five years.
+      </p>
+      <div class="hero-actions fade d3">
+        <a class="btn primary" href="#product">See the product</a>
+        <a class="btn secondary" href="#engine">Explore the engine</a>
+      </div>
+
+      <div class="product-stage fade d4" aria-label="NuWrrrld Financial product preview">
+        <div class="phone side">
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>Briefing</span></div>
+            <div class="app-title"><strong>Macro Pulse</strong><span class="pill">Bullish</span></div>
+            <div class="brief-card">
+              <div class="label">Regime score</div>
+              <div class="big-number up">+0.42</div>
+              <p class="brief-text">Risk appetite is improving as breadth expands and volatility cools.</p>
+            </div>
+            <div class="mini-grid">
+              <div class="mini-card"><strong class="up">72%</strong><span>Breadth</span></div>
+              <div class="mini-card"><strong class="down">-3.1%</strong><span>VIX</span></div>
+              <div class="mini-card"><strong class="up">+18</strong><span>McClellan</span></div>
+              <div class="mini-card"><strong class="flat">Neutral</strong><span>Rates</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone main">
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>NuWrrrld Financial</span></div>
+            <div class="app-title"><strong>Market Briefing</strong><span class="pill">Live</span></div>
+            <div class="brief-card">
+              <div class="label">S&P 500</div>
+              <div class="big-number up">5,943.21</div>
+              <p class="brief-text">Open - Bullish. AI brief favors semis, software, and quality growth while flagging macro headline risk.</p>
+            </div>
+            <div class="mini-grid">
+              <div class="mini-card"><strong>NASDAQ</strong><span>+0.71%</span></div>
+              <div class="mini-card"><strong>Dow</strong><span>-0.08%</span></div>
+              <div class="mini-card"><strong>Leaders</strong><span>AI infra, chips</span></div>
+              <div class="mini-card"><strong>Lagging</strong><span>Energy, defensives</span></div>
+            </div>
+            <div class="council-bubble">
+              Long-term council: near-term risk is acceptable, but 6-12 month exposure should favor sectors with earnings acceleration and margin durability.
+            </div>
+          </div>
+        </div>
+
+        <div class="phone side right">
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>Signals</span></div>
+            <div class="app-title"><strong>Today</strong><span class="pill">8 reads</span></div>
+            <div class="brief-card">
+              <div class="signal-row"><b>NVDA</b><div class="bar"><span style="width:91%"></span></div><span class="up">BUY</span></div>
+              <div class="signal-row"><b>MSFT</b><div class="bar"><span style="width:74%"></span></div><span class="up">BUY</span></div>
+              <div class="signal-row"><b>TSLA</b><div class="bar"><span style="width:58%"></span></div><span class="flat">HOLD</span></div>
+              <div class="signal-row"><b>XLE</b><div class="bar"><span style="width:36%"></span></div><span class="down">SELL</span></div>
+            </div>
+            <div class="council-bubble">Signal confidence compresses technical, macro, sector, sentiment, and event evidence.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="peek-band" aria-label="Key platform metrics">
+    <div class="metric"><strong>6</strong><span>AI council modes across short and long horizons.</span></div>
+    <div class="metric"><strong>138</strong><span>Signal outputs normalized into decisions.</span></div>
+    <div class="metric"><strong>270</strong><span>Symbol universe for scans and monitoring.</span></div>
+    <div class="metric"><strong>Live</strong><span>Cloud-backed data, cached for mobile speed.</span></div>
+  </div>
+
+  <section id="product">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="kicker">One mobile workflow</div>
+          <h2>From market state to trade decision without leaving the app.</h2>
+        </div>
+        <p class="section-copy">
+          One caring workflow for active investors: daily briefing, macro context, tactical signals,
+          Hold/Fold reads, council chat, and the data pipeline beneath it — all in one mobile app.
+        </p>
+      </div>
+
+      <div class="surface-grid">
+        <article class="surface wide">
+          <h3>Market Briefing</h3>
+          <p>Start with the state of the tape: index levels, macro regime, sector leadership, sentiment, and an AI-written briefing grounded in live backend data.</p>
+          <div class="screen-row">
+            <div class="screen-chip"><span>Status</span><b>Open - Bullish</b></div>
+            <div class="screen-chip"><span>Macro</span><b>Risk-on tilt</b></div>
+            <div class="screen-chip"><span>Sectors</span><b>AI infra leads</b></div>
+          </div>
+        </article>
+        <article class="surface">
+          <h3>Macro Pulse</h3>
+          <p>Convert rates, breadth, volatility, dollar, earnings, and sentiment into a compact market regime read.</p>
+          <ul class="feature-list">
+            <li>Regime score and summary.</li>
+            <li>Indicator-level move tracking.</li>
+            <li>Signal tags for fast scanning.</li>
+          </ul>
+        </article>
+        <article class="surface">
+          <h3>Signal Feed</h3>
+          <p>Ranked buy, sell, and hold outputs with confidence and rationale, suitable for the first pass before deeper analysis.</p>
+          <ul class="feature-list">
+            <li>Normalized ticker decisions.</li>
+            <li>Confidence scores.</li>
+            <li>Short reason snippets.</li>
+          </ul>
+        </article>
+        <article class="surface">
+          <h3>Hold/Fold</h3>
+          <p>Tactical verdicts for trades, including bias, risk, volatility regime, primary signal, and supporting signals.</p>
+          <ul class="feature-list">
+            <li>Verdict, confidence, and risk.</li>
+            <li>ATR, RSI, MACD, ADX context.</li>
+            <li>Trade-plan friendly output.</li>
+          </ul>
+        </article>
+        <article class="surface wide">
+          <h3>AI Council Chat</h3>
+          <p>Ask the app to reason like a council: short-term trader, long-term investor, or agreement synthesis across both. The prompts require exact data citations and horizon-specific invalidation levels.</p>
+          <div class="screen-row">
+            <div class="screen-chip"><span>Short term</span><b>1D to 60D</b></div>
+            <div class="screen-chip"><span>Long term</span><b>2M to 5Y</b></div>
+            <div class="screen-chip"><span>Synthesis</span><b>Conflicts resolved</b></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="engine" class="engine">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="kicker">Signal engine</div>
+          <h2>A decision layer built from many weak reads, not one loud indicator.</h2>
+        </div>
+        <p class="section-copy">
+          The product becomes compelling when the user can see why a signal exists. The matrix view below
+          explains the breadth: technicals, volatility, macro, sector rotation, sentiment, events, and horizon fit.
+        </p>
+      </div>
+
+      <div class="matrix" role="img" aria-label="Example signal matrix with decisions across time horizons">
+        <div class="matrix-head">
+          <strong>Signal Matrix - NVDA</strong>
+          <span class="pill">380+ inputs</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <div class="matrix-grid">
+            <div class="matrix-cell head">Signal</div>
+            <div class="matrix-cell head">1D</div>
+            <div class="matrix-cell head">5D</div>
+            <div class="matrix-cell head">1M</div>
+            <div class="matrix-cell head">3M</div>
+            <div class="matrix-cell head">1Y</div>
+            <div class="matrix-cell head">Conf</div>
+
+            <div class="matrix-cell name">RSI + divergence</div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict hold">HOLD</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict hold">HOLD</span></div>
+            <div class="matrix-cell mono">0.87</div>
+
+            <div class="matrix-cell name">MACD cross state</div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict hold">HOLD</span></div>
+            <div class="matrix-cell"><span class="verdict hold">HOLD</span></div>
+            <div class="matrix-cell mono">0.91</div>
+
+            <div class="matrix-cell name">Breadth and sector relative</div>
+            <div class="matrix-cell"><span class="verdict hold">HOLD</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell mono">0.82</div>
+
+            <div class="matrix-cell name">Macro regime stress</div>
+            <div class="matrix-cell"><span class="verdict hold">HOLD</span></div>
+            <div class="matrix-cell"><span class="verdict hold">HOLD</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell mono">0.74</div>
+
+            <div class="matrix-cell name">Event and earnings drift</div>
+            <div class="matrix-cell"><span class="verdict sell">SELL</span></div>
+            <div class="matrix-cell"><span class="verdict hold">HOLD</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict buy">BUY</span></div>
+            <div class="matrix-cell"><span class="verdict hold">HOLD</span></div>
+            <div class="matrix-cell mono">0.69</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="engine-bottom">
+        <div class="engine-card"><strong>Technical</strong><span>RSI, MACD, Bollinger, volume, trend, ATR, ADX, volatility.</span></div>
+        <div class="engine-card"><strong>Macro</strong><span>Rates, dollar, volatility curve, breadth, market tone, regime score.</span></div>
+        <div class="engine-card"><strong>Fundamental</strong><span>Earnings events, surprises, quality, risk packets, growth narratives.</span></div>
+        <div class="engine-card"><strong>Decision</strong><span>Confidence, horizon fit, invalidation, entry, stop, and counter-argument.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="council">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="kicker">AI council</div>
+          <h2>One question, multiple time horizons, explicit disagreement.</h2>
+        </div>
+        <p class="section-copy">
+          The council layer is the product's difference: it does not just summarize. It forces the short-term
+          and long-term views to cite data, name invalidation points, and reconcile conflicts before a user acts.
+        </p>
+      </div>
+
+      <div class="council-layout">
+        <article class="council-panel">
+          <h3>Short-term council</h3>
+          <p class="section-copy">For tactical trades, this council is built around speed, range, catalyst timing, and technical invalidation.</p>
+          <div class="horizon-grid">
+            <div class="horizon"><b>1 day</b><span>Next-session momentum and range.</span></div>
+            <div class="horizon"><b>2-5 days</b><span>Swing setup and catalyst timing.</span></div>
+            <div class="horizon"><b>1-4 weeks</b><span>Trend strength and regime quality.</span></div>
+            <div class="horizon"><b>30-60 days</b><span>Durability, volatility, and macro risk.</span></div>
+          </div>
+        </article>
+
+        <article class="council-panel">
+          <h3>Long-term council</h3>
+          <p class="section-copy">For allocation decisions, this council stretches the question across earnings, trend, cycle, and structural horizons.</p>
+          <div class="horizon-grid">
+            <div class="horizon"><b>2-3 months</b><span>Tactical and earnings-cycle read.</span></div>
+            <div class="horizon"><b>6-12 months</b><span>Sector rotation and trend regime.</span></div>
+            <div class="horizon"><b>1-3 years</b><span>Business cycle and macro phase.</span></div>
+            <div class="horizon"><b>3-5 years</b><span>Structural shift or cyclical noise.</span></div>
+          </div>
+        </article>
+
+        <article class="council-panel">
+          <h3>Agreement synthesis</h3>
+          <p class="section-copy">When both councils answer, the synthesis layer weights conflicts and produces an execution plan tied to a primary horizon.</p>
+          <ul class="feature-list" style="margin-top:18px;">
+            <li>Names the horizons that agree.</li>
+            <li>Identifies the exact conflict.</li>
+            <li>Turns disagreement into sizing logic.</li>
+          </ul>
+        </article>
+
+        <article class="council-panel">
+          <h3>Example exchange</h3>
+          <div class="chat-demo">
+            <div class="chat user">Should I add NVDA here or wait for a pullback?</div>
+            <div class="chat ai">Short-term: wait for ATR-defined entry. Long-term: add gradually if semis remain leadership. Conflict: price extension versus earnings durability.</div>
+            <div class="chat ai">Execution: starter size now, second tranche only if breadth confirms and RSI cools without breaking trend.</div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="pipeline" class="pipeline">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="kicker">Data pipeline</div>
+          <h2>Compelling on the surface, serious underneath.</h2>
+        </div>
+        <p class="section-copy">
+          The mobile app is backed by the NuWrrrld backend, cached responses, resilient clients,
+          and workflows that keep market data fresh without making the user wait.
+        </p>
+      </div>
+
+      <div class="pipeline-map">
+        <div class="pipe-node"><b>Market data</b><span>NuWrrrld backend normalizes overview, macro pulse, signals, earnings, and sector reads.</span></div>
+        <div class="pipe-node"><b>Cloud cache</b><span>Firestore-backed caches and server-side revalidation keep the mobile app responsive.</span></div>
+        <div class="pipe-node"><b>Mobile clients</b><span>Typed client wrappers normalize backend response shapes before screens consume them.</span></div>
+        <div class="pipe-node"><b>Briefing UI</b><span>BriefingScreen combines market overview, macro pulse, signals, and council prompt context.</span></div>
+        <div class="pipe-node"><b>RAG council</b><span>AI text backend receives short-term, long-term, or agreement-filtered prompts.</span></div>
+        <div class="pipe-node"><b>Decision</b><span>The user gets a view, invalidation level, sizing rationale, and horizon-specific conflict.</span></div>
+      </div>
+
+      <div class="proof-grid">
+        <article class="proof">
+          <h3>Reliability is part of the pitch</h3>
+          <p>Mobile finance tools lose trust when data fails silently. NuWrrrld Financial treats loading, errors, stale data, and confidence as visible product states.</p>
+          <ul class="proof-list">
+            <li>Network-resilient client layer</li>
+            <li>Typed normalized response shapes</li>
+            <li>Explicit error and loading surfaces</li>
+            <li>Backend cache-first architecture</li>
+          </ul>
+        </article>
+        <article class="proof">
+          <h3>Built for repeated use</h3>
+          <p>The product is not a one-time research report. It is a daily loop: brief, scan, ask, decide, revisit.</p>
+          <ul class="proof-list">
+            <li>Morning briefing before market decisions</li>
+            <li>Signal feed for immediate priorities</li>
+            <li>Hold/Fold for trade-level verdicts</li>
+            <li>Council chat for nuance and conflict</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="kicker">Who it is for</div>
+          <h2>Different investors, one shared intelligence layer.</h2>
+        </div>
+        <p class="section-copy">
+          Smart tools for every style of investor — active traders, long-term allocators,
+          sector watchers, and builders who deserve transparent, avant-garde market reasoning.
+        </p>
+      </div>
+
+      <div class="audience-grid">
+        <article class="audience">
+          <span>Active traders</span>
+          <h3>Find what matters before the open.</h3>
+          <p>Use tactical signals, volatility context, and Hold/Fold verdicts to plan entries and stops.</p>
+        </article>
+        <article class="audience">
+          <span>Long-term investors</span>
+          <h3>Separate noise from regime.</h3>
+          <p>Ask the long-term council to reason through 2-month, 12-month, 3-year, and 5-year implications.</p>
+        </article>
+        <article class="audience">
+          <span>Sector watchers</span>
+          <h3>Track leadership shifts.</h3>
+          <p>See which industries are leading, lagging, and confirming the broader macro pulse.</p>
+        </article>
+        <article class="audience">
+          <span>Research builders</span>
+          <h3>Inspect the decision chain.</h3>
+          <p>Use typed data, prompt builders, and explicit evidence requirements instead of vague AI summaries.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="access" class="cta">
+    <div class="wrap">
+      <div class="kicker">Start today</div>
+      <h2>Give every market question a council, not just a chart.</h2>
+      <p>
+        NuWrrrld Financial is the smart, caring alternative to noise — a repeatable decision
+        workflow for market state, signal evidence, horizon conflict, and a plan you can revisit.
+      </p>
+      <div class="hero-actions">
+        <a class="btn primary" href="https://accounts.nuwrrrld.com/sign-up">Create your account</a>
+        <a class="btn secondary" href="https://financial.nuwrrrld.com">Open the app</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>NuWrrrld Financial</span>
+    <span>Smart · Avant-garde · Caring</span>
+  </footer>
+</body>
+</html>
