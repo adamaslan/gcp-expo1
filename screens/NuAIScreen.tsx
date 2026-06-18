@@ -6,17 +6,21 @@ import {
 } from 'react-native';
 import { useNuAI } from '../lib/useNuAI';
 import { NU_AI_DISCLAIMER } from '../lib/nuai';
-import { useEntitlement } from '../lib/useSubscription';
+import { useSubscription, useEntitlement } from '../lib/useSubscription';
 import PaywallScreen from './PaywallScreen';
+import { StateView } from '../components/StateView';
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
 
 export default function NuAIScreen() {
+  const { isLoading: subLoading } = useSubscription();
   const entitled = useEntitlement();
   const { messages, isLoading, error, upgradeRequired, dailyLimitReached, sendMessage } = useNuAI();
   const [input, setInput] = useState('');
   const listRef = useRef<FlatList>(null);
 
+  // Wait for subscription status before showing the paywall — prevents flash for pro users.
+  if (subLoading) return <StateView state="loading" />;
   if (!entitled('nu_ai') || upgradeRequired) {
     return <PaywallScreen />;
   }
@@ -36,7 +40,7 @@ export default function NuAIScreen() {
     if (!text || isLoading) return;
     setInput('');
     await sendMessage(text);
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    // onContentSizeChange on FlatList handles auto-scroll — no manual setTimeout needed.
   }
 
   return (

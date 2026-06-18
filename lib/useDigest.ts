@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
-import type { DigestPayload } from './digest';
+import { normaliseDigest, type DigestPayload } from './digest';
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
 
@@ -34,7 +34,8 @@ export function useDigest(): DigestState {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: DigestPayload = await res.json();
+        const raw = await res.json();
+        const data = normaliseDigest(raw, raw.sources ?? []);
         if (!cancelled) setDigest(data);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load signals');

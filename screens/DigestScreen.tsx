@@ -3,13 +3,16 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native
 import { useDigest } from '../lib/useDigest';
 import { SignalDigestCard } from '../components/SignalDigestCard';
 import { StateView } from '../components/StateView';
-import { useEntitlement } from '../lib/useSubscription';
+import { useSubscription, useEntitlement } from '../lib/useSubscription';
 import PaywallScreen from './PaywallScreen';
 
 export default function DigestScreen() {
   const { digest, isLoading, error, refetch } = useDigest();
+  const { isLoading: subLoading } = useSubscription();
   const entitled = useEntitlement();
 
+  // Wait for subscription status before showing the paywall — prevents flash for pro users.
+  if (subLoading) return <StateView state="loading" />;
   if (!entitled('signals_digest')) {
     return <PaywallScreen />;
   }

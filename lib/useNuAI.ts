@@ -24,6 +24,7 @@ export function useNuAI(): NuAIState {
 
   const sendMessage = useCallback(async (text: string, portfolioContext?: string[]) => {
     const userMessage: ChatMessage = { role: 'user', content: text, timestamp: new Date().toISOString() };
+    const previousMessages = messages;
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
     setIsLoading(true);
@@ -38,13 +39,22 @@ export function useNuAI(): NuAIState {
         body: JSON.stringify(body),
       });
 
-      if (res.status === 403) { setUpgradeRequired(true); return; }
-      if (res.status === 429) { setDailyLimitReached(true); return; }
+      if (res.status === 403) {
+        setMessages(previousMessages); // rollback optimistic message
+        setUpgradeRequired(true);
+        return;
+      }
+      if (res.status === 429) {
+        setMessages(previousMessages); // rollback optimistic message
+        setDailyLimitReached(true);
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data: ChatResponse = await res.json();
       setMessages(m => [...m, data.message]);
     } catch (err) {
+      setMessages(previousMessages); // rollback on network/parse error
       setError(err instanceof Error ? err.message : 'Failed to reach Nu AI');
     } finally {
       setIsLoading(false);
