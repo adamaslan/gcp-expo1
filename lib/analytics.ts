@@ -27,18 +27,20 @@ export type AnalyticsEvent =
 type EventName = AnalyticsEvent['name'];
 type EventProps<N extends EventName> = Extract<AnalyticsEvent, { name: N }>['props'];
 
-let _posthog: unknown = null;
+// null = tried and failed/unavailable; undefined = not yet attempted
+let _posthog: unknown | null = undefined;
 
 function getPosthog() {
-  if (_posthog) return _posthog;
+  if (_posthog !== undefined) return _posthog;  // return cached result (even null)
   try {
     const key = process.env.EXPO_PUBLIC_POSTHOG_KEY;
-    if (!key) return null;
+    if (!key) { _posthog = null; return null; }
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PostHog } = require('posthog-react-native');
     _posthog = new PostHog(key, { host: 'https://app.posthog.com' });
     return _posthog;
   } catch {
+    _posthog = null;
     return null;
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   ActivityIndicator, ScrollView, Linking,
@@ -8,7 +8,11 @@ import { track } from '../lib/analytics';
 const SCHWAB_CONNECT_URL =
   (process.env.EXPO_PUBLIC_GCP3_BACKEND_URL ?? 'http://localhost:8000') + '/api/schwab/oauth/start';
 
-type Step = 'welcome' | 'connect' | 'connecting' | 'done';
+// Deep-link scheme the Schwab OAuth callback redirects back to.
+// Set in app.json: scheme = "nuwrrrld"
+const OAUTH_SUCCESS_SCHEME = 'nuwrrrld://schwab/callback';
+
+type Step = 'welcome' | 'connect' | 'connecting' | 'done' | 'error';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -17,21 +21,31 @@ interface OnboardingScreenProps {
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [step, setStep] = useState<Step>('welcome');
 
+  // Listen for the OAuth deep-link callback before declaring the connection done.
+  useEffect(() => {
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      if (url.startsWith(OAUTH_SUCCESS_SCHEME)) {
+        // OAuth flow completed — now the connection is real.
+        track('account_connected', { provider: 'schwab' });
+        setStep('done');
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   async function handleConnect() {
     setStep('connecting');
     try {
       await Linking.openURL(SCHWAB_CONNECT_URL);
-      track('account_connected', { provider: 'schwab' });
-      // After OAuth redirect returns the user will deep-link back;
-      // simulate done for now — real handling is in the deep-link listener.
-      setStep('done');
+      // Stay in 'connecting' — the deep-link listener above advances to 'done'
+      // once Schwab redirects back. If the user cancels the browser, they can
+      // tap "Try again" to return to the connect step.
     } catch {
-      setStep('connect');
+      setStep('error');
     }
   }
 
   function handleSkip() {
-    // Users can explore with demo data; prompt to connect again on paywall.
     onComplete();
   }
 
@@ -89,25 +103,40 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color="#2563eb" />
-        <Text style={styles.loadingText}>Opening Schwab…</Text>
+        <Text style={styles.loadingText}>Waiting for Schwab authorisation…</Text>
+        <TouchableOpacity style={styles.cancelLink} onPress={() => setStep('connect')}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  // done
+  if (step === 'error') {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <Text style={styles.emoji}>⚠️</Text>
+        <Text style={styles.title}>Could not open Schwab</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={() => setStep('connect')}>
+          <Text style={styles.primaryBtnText}>Try again</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+          <Text style={styles.skipText}>Skip for now</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // done — account connected, signal import started
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.emoji}>🎉</Text>
-      <Text style={styles.title}>You're all set!</Text>
+      <Text style={styles.title}>Account connected!</Text>
       <Text style={styles.subtitle}>
-        Your portfolio is being imported. Your first signal digest
-        will be ready within a few minutes.
+        Your portfolio is being imported. Head to your dashboard —
+        your first signal digest will appear there once it's ready.
       </Text>
-      <TouchableOpacity style={styles.primaryBtn} onPress={() => {
-        track('first_value', { feature: 'signal' });
-        onComplete();
-      }}>
-        <Text style={styles.primaryBtnText}>See my dashboard</Text>
+      <TouchableOpacity style={styles.primaryBtn} onPress={onComplete}>
+        <Text style={styles.primaryBtnText}>Go to dashboard</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -127,5 +156,7 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   skipBtn: { padding: 8 },
   skipText: { color: '#9ca3af', fontSize: 14 },
-  loadingText: { marginTop: 16, color: '#555', fontSize: 15 },
+  loadingText: { marginTop: 16, color: '#555', fontSize: 15, textAlign: 'center' },
+  cancelLink: { marginTop: 16, padding: 8 },
+  cancelText: { color: '#9ca3af', fontSize: 14 },
 });

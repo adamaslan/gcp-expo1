@@ -31,7 +31,9 @@ export function initSentry(): void {
   }
 }
 
+// Only return the Sentry module if init succeeded — prevents calling uninitialised SDK.
 function getSentry() {
+  if (!_ready) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('@sentry/react-native');
