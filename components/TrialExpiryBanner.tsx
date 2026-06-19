@@ -1,10 +1,5 @@
-/**
- * TrialExpiryBanner — shown inline when trial ends within 48 hours.
- * Mount at the top of DigestScreen / NuAIScreen.
- * Taps through to the upgrade URL.
- */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { useSubscription } from '../lib/useSubscription';
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
@@ -15,17 +10,27 @@ export function TrialExpiryBanner() {
 
   if (status !== 'trialing' || !trialEnd) return null;
 
-  const hoursLeft = (new Date(trialEnd).getTime() - Date.now()) / 3_600_000;
-  if (hoursLeft > WARN_HOURS) return null;
+  const expiryMs = new Date(trialEnd).getTime();
+  if (Number.isNaN(expiryMs)) return null;          // malformed date
+  const hoursLeft = (expiryMs - Date.now()) / 3_600_000;
+  if (hoursLeft <= 0 || hoursLeft > WARN_HOURS) return null;  // expired or not yet urgent
 
   const label = hoursLeft < 1
     ? 'Trial ends in less than 1 hour'
-    : `Trial ends in ${Math.ceil(hoursLeft)} hours`;
+    : `Trial ends in ${Math.ceil(hoursLeft)} hour${Math.ceil(hoursLeft) === 1 ? '' : 's'}`;
+
+  async function handlePress() {
+    try {
+      await Linking.openURL(`${PORTAL_URL}/pricing`);
+    } catch {
+      // Silently ignore — URL might not open on this device
+    }
+  }
 
   return (
     <TouchableOpacity
       style={styles.banner}
-      onPress={() => Linking.openURL(`${PORTAL_URL}/pricing`)}
+      onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={`${label} — tap to subscribe`}
     >
