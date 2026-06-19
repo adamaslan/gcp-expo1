@@ -1,8 +1,8 @@
 /**
- * Share sheet — native iOS/Android share via Expo Sharing.
- * Fetches the user's referral code, builds a share URL, opens the system sheet.
+ * Share sheet — native iOS/Android share via RN Share API.
+ * expo-sharing is for local files; Share.share() handles text/URLs on both platforms.
  */
-import * as Sharing from 'expo-sharing';
+import { Share } from 'react-native';
 import { captureException } from './sentry';
 import { track } from './analytics';
 
@@ -19,19 +19,10 @@ export async function shareReferralLink(authToken: string): Promise<void> {
     const url = `${PORTAL_URL}/pricing?ref=${code}`;
     const message = `I've been using NuWrrrld Financial for AI stock signals with plain-language explanations. Try it free (7 days): ${url}`;
 
-    const available = await Sharing.isAvailableAsync();
-    if (!available) {
-      // Fallback: copy to clipboard (handled by caller via Clipboard API).
-      throw new Error('share_unavailable');
-    }
-
-    // expo-sharing works with files; for text-only, open the URL in the share sheet.
-    await Sharing.shareAsync(url, { dialogTitle: message });
+    await Share.share({ message });
     track('referral_sent', {});
   } catch (err) {
-    if (err instanceof Error && err.message !== 'share_unavailable') {
-      captureException(err, { context: 'shareReferralLink' });
-    }
+    captureException(err, { context: 'shareReferralLink' });
     throw err;
   }
 }

@@ -43,11 +43,12 @@ export async function registerPushToken(authToken: string): Promise<void> {
     const tokenData = await Notifications.getExpoPushTokenAsync();
     const pushToken = tokenData.data;
 
-    await fetch(`${PORTAL_URL}/api/push/register`, {
+    const res = await fetch(`${PORTAL_URL}/api/push/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
       body: JSON.stringify({ token: pushToken, platform: Platform.OS }),
     });
+    if (!res.ok) throw new Error(`push register failed: HTTP ${res.status}`);
   } catch (err) {
     captureException(err, { context: 'registerPushToken' });
   }
