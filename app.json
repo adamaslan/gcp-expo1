@@ -15,16 +15,24 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nuwrrrld.financial"
+      "bundleIdentifier": "com.nuwrrrld.financial",
+      "buildNumber": "1",
+      "config": {
+        "googleSignIn": {
+          "reservedClientId": "$(GOOGLE_REVERSED_CLIENT_ID)"
+        }
+      }
     },
     "android": {
       "package": "com.nuwrrrld.financial",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a0a"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.INTERNET"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
