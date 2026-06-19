@@ -17,10 +17,6 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.nuwrrrld.financial",
       "buildNumber": "1",
-      "infoPlist": {
-        "NSCameraUsageDescription": "Not used.",
-        "NSLocationWhenInUseUsageDescription": "Not used."
-      },
       "config": {
         "googleSignIn": {
           "reservedClientId": "$(GOOGLE_REVERSED_CLIENT_ID)"
@@ -36,7 +32,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.INTERNET", "android.permission.RECEIVE_BOOT_COMPLETED"]
+      "permissions": ["android.permission.INTERNET"]
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -3,22 +3,11 @@
   "subtitle": "Signals · AI · Portfolio Intel",
   "category": "Finance",
   "secondaryCategory": "Productivity",
-  "keywords": [
-    "stock signals",
-    "portfolio tracker",
-    "AI finance assistant",
-    "investment signals",
-    "market analysis",
-    "portfolio health",
-    "stock alerts",
-    "finance AI",
-    "trading signals",
-    "portfolio optimizer"
-  ],
-  "shortDescription": "AI-powered signals, portfolio health scoring, and a personal finance assistant — all in one app.",
+  "keywords": ["stock signals", "portfolio tracker", "AI finance", "investment signals", "market analysis", "portfolio health", "stock alerts", "finance AI"],
+  "shortDescription": "AI signals, portfolio health scoring, and finance AI in one app.",
   "fullDescription": "NuWrrrld Financial gives you an edge with institutional-grade tools made accessible:\n\n📈 SIGNAL DIGEST\nDaily and weekly signals from our AI optimizer — each one explained in plain language so you understand the why, not just the what.\n\n🤖 NU AI ASSISTANT\nAsk anything about your portfolio, market conditions, or financial concepts. Nu AI answers in the context of your actual holdings.\n\n💼 PORTFOLIO INTELLIGENCE\nA health score that grades your portfolio across risk, diversification, and momentum — with concrete suggestions for improvement.\n\n🔔 WATCHLIST ALERTS\nTrack any ticker and get notified when our signals fire or price thresholds are hit.\n\n⚡ BUILT FOR SCHWAB\nConnect your Schwab brokerage account in minutes for fully personalised insights.\n\n────────────────────\nNOT FINANCIAL ADVICE\nNuWrrrld Financial provides informational tools and analysis. Nothing in the app constitutes personalised investment, financial, legal, or tax advice. Always perform your own due diligence.\n────────────────────\n\n7-DAY FREE TRIAL\nTry all Pro features free for 7 days. Cancel anytime.",
   "privacyPolicyUrl": "https://financial.nuwrrrld.com/privacy-policy",
-  "supportUrl": "mailto:chillcoders@gmail.com",
+  "supportUrl": "https://financial.nuwrrrld.com/support",
   "marketingUrl": "https://financial.nuwrrrld.com",
   "screenshots": {
     "ios": {
@@ -33,8 +22,8 @@
   "releaseNotes": "Initial release — signals, AI assistant, portfolio intelligence, and watchlists.",
   "appStoreSubmissionChecklist": {
     "privacyLabels": "Declare: Financial Info (portfolio data), Usage Data (analytics), Contact Info (account)",
-    "accountDeletion": "Available via /dashboard/billing → cancel subscription, then email support",
-    "demoCredentials": "demo@nuwrrrld.com / NuWDemo2026! (Schwab link: skip in demo mode)",
+    "accountDeletion": "In-app: Settings → Delete Account. Removes all data. See /support for details.",
+    "demoCredentials": "demo@nuwrrrld.com — password in 1Password vault 'App Store Review'",
     "reviewNotes": "Use demo mode (tap 'Explore without connecting' on onboarding) to bypass Schwab OAuth. All features visible in demo mode."
   }
 }
