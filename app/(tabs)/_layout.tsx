@@ -18,6 +18,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="market" options={{ title: 'Market' }} />
       <Tabs.Screen name="chat" options={{ title: 'Chat' }} />
       <Tabs.Screen name="holdfold" options={{ title: 'HoldFold' }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );
 }
