@@ -31,22 +31,30 @@ export default function SettingsScreen() {
   const subscriptionStatus = (user.publicMetadata?.subscription_status as string) ?? 'free';
   const isPro = subscriptionStatus === 'pro';
 
-  const handleOpenCheckout = async () => {
-    setLoading(true);
+  const handleOpenURL = async (url: string) => {
     try {
-      await Linking.openURL(`${PORTAL_URL}/pricing`);
+      const canOpen = await Linking.canOpenURL(url);
+      if (!canOpen) {
+        Alert.alert('Error', 'Cannot open this link');
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (err) {
+      console.error('Failed to open URL:', err);
+      Alert.alert('Error', 'Failed to open link');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleOpenCheckout = async () => {
+    setLoading(true);
+    handleOpenURL(`${PORTAL_URL}/pricing`);
+  };
+
   const handleManageBilling = async () => {
     setLoading(true);
-    try {
-      await Linking.openURL(`${PORTAL_URL}/dashboard/billing`);
-    } finally {
-      setLoading(false);
-    }
+    handleOpenURL(`${PORTAL_URL}/dashboard/billing`);
   };
 
   const handleSignOut = async () => {
@@ -72,7 +80,9 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Account</Text>
         <View style={styles.card}>
           <Text style={styles.label}>Name</Text>
-          <Text style={styles.value}>{user.firstName} {user.lastName}</Text>
+          <Text style={styles.value}>
+            {[user.firstName, user.lastName].filter(Boolean).join(' ') || 'User'}
+          </Text>
         </View>
         <View style={styles.card}>
           <Text style={styles.label}>Email</Text>
@@ -179,7 +189,7 @@ const styles = StyleSheet.create({
     color: theme.text.primary,
   },
   proBadge: {
-    color: '#35d07f',
+    color: theme.accent.green ?? '#35d07f',
   },
   button: {
     backgroundColor: theme.accent.indigo,
@@ -190,7 +200,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   buttonText: {
-    color: '#fff',
+    color: theme.text.inverse,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -206,11 +216,11 @@ const styles = StyleSheet.create({
   },
   dangerButton: {
     backgroundColor: 'transparent',
-    borderColor: theme.text.error,
+    borderColor: theme.accent.red,
     borderWidth: 1,
   },
   dangerButtonText: {
-    color: theme.text.error,
+    color: theme.accent.red,
     fontSize: 14,
     fontWeight: '600',
   },
