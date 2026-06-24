@@ -8,6 +8,7 @@ import {
   Linking,
   ScrollView,
 } from 'react-native';
+import { useAuth } from '@clerk/clerk-expo';
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
 
@@ -25,11 +26,29 @@ interface PaywallScreenProps {
 
 export default function PaywallScreen({ onClose }: PaywallScreenProps) {
   const [loading, setLoading] = useState<'monthly' | 'annual' | null>(null);
+  const { getToken } = useAuth();
 
   async function openCheckout(plan: 'monthly' | 'annual') {
     setLoading(plan);
     try {
-      await Linking.openURL(`${PORTAL_URL}/pricing?plan=${plan}`);
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch(`${PORTAL_URL}/api/stripe/checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan }),
+      });
+      if (!res.ok) throw new Error(`checkout failed: ${res.status}`);
+      const data: unknown = await res.json();
+      if (typeof data !== 'object' || data === null || !('url' in data) || typeof (data as { url: unknown }).url !== 'string') {
+        throw new Error('invalid checkout response');
+      }
+      await Linking.openURL((data as { url: string }).url);
+    } catch (err) {
+      console.error('PaywallScreen checkout error', err);
     } finally {
       setLoading(null);
     }
