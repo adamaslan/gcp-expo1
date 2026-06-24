@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Linking,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 
@@ -30,9 +31,14 @@ export default function PaywallScreen({ onClose }: PaywallScreenProps) {
 
   async function openCheckout(plan: 'monthly' | 'annual') {
     setLoading(plan);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
       const token = await getToken();
-      if (!token) return;
+      if (!token) {
+        Alert.alert('Sign In Required', 'Please sign in to subscribe.');
+        return;
+      }
       const res = await fetch(`${PORTAL_URL}/api/stripe/checkout`, {
         method: 'POST',
         headers: {
@@ -40,6 +46,7 @@ export default function PaywallScreen({ onClose }: PaywallScreenProps) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ plan }),
+        signal: controller.signal,
       });
       if (!res.ok) throw new Error(`checkout failed: ${res.status}`);
       const data: unknown = await res.json();
@@ -49,7 +56,9 @@ export default function PaywallScreen({ onClose }: PaywallScreenProps) {
       await Linking.openURL((data as { url: string }).url);
     } catch (err) {
       console.error('PaywallScreen checkout error', err);
+      Alert.alert('Checkout Error', 'Could not open checkout. Please try again.');
     } finally {
+      clearTimeout(timeoutId);
       setLoading(null);
     }
   }
