@@ -7,7 +7,9 @@ import {
   ActivityIndicator,
   Linking,
   ScrollView,
+  Alert,
 } from 'react-native';
+import { useAuth } from '@clerk/clerk-expo';
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
 
@@ -25,12 +27,38 @@ interface PaywallScreenProps {
 
 export default function PaywallScreen({ onClose }: PaywallScreenProps) {
   const [loading, setLoading] = useState<'monthly' | 'annual' | null>(null);
+  const { getToken } = useAuth();
 
   async function openCheckout(plan: 'monthly' | 'annual') {
     setLoading(plan);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
-      await Linking.openURL(`${PORTAL_URL}/pricing?plan=${plan}`);
+      const token = await getToken();
+      if (!token) {
+        Alert.alert('Sign In Required', 'Please sign in to subscribe.');
+        return;
+      }
+      const res = await fetch(`${PORTAL_URL}/api/stripe/checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan }),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`checkout failed: ${res.status}`);
+      const data: unknown = await res.json();
+      if (typeof data !== 'object' || data === null || !('url' in data) || typeof (data as { url: unknown }).url !== 'string') {
+        throw new Error('invalid checkout response');
+      }
+      await Linking.openURL((data as { url: string }).url);
+    } catch (err) {
+      console.error('PaywallScreen checkout error', err);
+      Alert.alert('Checkout Error', 'Could not open checkout. Please try again.');
     } finally {
+      clearTimeout(timeoutId);
       setLoading(null);
     }
   }
