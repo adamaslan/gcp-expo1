@@ -3,10 +3,11 @@
  * Designed for scannability: headline above the fold, explanation below.
  */
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Share, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Share } from 'react-native';
 import type { SignalPayload } from '../lib/digest';
 import { buildSignalCard, formatSignalForShare } from '../lib/signalCard';
-import { EXPO_PUBLIC_PORTAL_URL } from '../lib/config-validator';
+
+const EXPO_PUBLIC_PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
 
 const DIRECTION_COLOR: Record<string, string> = {
   bullish: '#16a34a',
@@ -30,14 +31,14 @@ export function SignalDigestCard({ signal }: SignalDigestCardProps) {
 
   const handleShare = async () => {
     try {
-      const appUrl = Platform.OS === 'ios' ? 'nuwrrrld://' : 'nuwrrrld://';
-      const card = buildSignalCard(signal, EXPO_PUBLIC_PORTAL_URL, appUrl);
+      const card = buildSignalCard(signal, EXPO_PUBLIC_PORTAL_URL, EXPO_PUBLIC_PORTAL_URL);
       const text = formatSignalForShare(signal);
+      const message = `${text}\n${card.shareUrl}\n\n📊 ${card.imageUrl}`;
 
       await Share.share({
-        message: `${text}\n${card.shareUrl}`,
+        message,
         title: `Signal: ${signal.ticker}`,
-        url: card.imageUrl, // iOS only
+        url: card.imageUrl,
       });
     } catch (e) {
       console.error('Share failed:', e);
