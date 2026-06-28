@@ -47,6 +47,60 @@ export interface DigestPayload {
   sources: string[];
 }
 
+/**
+ * Adapter: GCP3 Finance API v2 /signals response (symbols map) → DigestPayload.
+ * The live backend returns { date, updated, total, symbols: { TICKER: {...} } }
+ * rather than a signals array. This bridges the two shapes.
+ */
+export function adaptLiveSignals(raw: unknown): DigestPayload {
+  if (!raw || typeof raw !== 'object') throw new Error('Invalid /signals response');
+  const r = raw as Record<string, unknown>;
+  // Validate symbols is a plain object — reject arrays or nulls at the boundary.
+  if (!r.symbols || typeof r.symbols !== 'object' || Array.isArray(r.symbols)) {
+    throw new Error('Invalid /signals response: symbols must be a plain object');
+  }
+  const symbols = r.symbols as Record<string, unknown>;
+  const fallbackDate = String(r.updated ?? new Date().toISOString());
+
+  // Use Object.entries so the map key (authoritative ticker) is always available
+  // even when the inner record omits the redundant `symbol` field.
+  const signals: SignalPayload[] = Object.entries(symbols)
+    .filter(([, s]) => s !== null && typeof s === 'object' && !Array.isArray(s))
+    .map(([symbolKey, s], i) => {
+      const entry = s as Record<string, unknown>;
+      // symbolKey is the authoritative ticker; fall back to inner field only if key is empty
+      const ticker = String(symbolKey || entry.symbol || '').trim().toUpperCase();
+      const action = String(entry.ai_action ?? '').toUpperCase();
+      const direction: SignalDirection =
+        action === 'BUY' ? 'bullish' : action === 'SELL' ? 'bearish' : 'neutral';
+      const rawConf = String(entry.ai_confidence ?? '').toLowerCase();
+      const indicators: string[] = Array.isArray(entry.signals)
+        ? (entry.signals as Record<string, unknown>[])
+            .map(x => String(x.signal ?? '').trim())
+            .filter(Boolean)
+        : [];
+      return {
+        id: ticker || `signal-${i}`,
+        ticker,
+        direction,
+        timeframe: 'medium',
+        confidence: safeConfidence(rawConf),
+        title: String(entry.ai_summary ?? ''),
+        explanation: String(entry.ai_outlook ?? ''),
+        indicators,
+        generatedAt: fallbackDate,
+      };
+    });
+
+  return {
+    schemaVersion: DIGEST_SCHEMA_VERSION,
+    periodLabel: `Signals for ${String(r.date ?? '')}`,
+    signals,
+    generatedAt: fallbackDate,
+    sources: ['gcp3-signals'],
+  };
+}
+
 /** Adapter: normalise a raw optimizer response into a DigestPayload. */
 export function normaliseDigest(raw: unknown, sources: string[]): DigestPayload {
   if (!raw || typeof raw !== 'object') throw new Error('Invalid digest response');

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
-import { normaliseDigest, type DigestPayload } from './digest';
+import { adaptLiveSignals, type DigestPayload } from './digest';
 
-const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
+const GCP3_URL = process.env.EXPO_PUBLIC_GCP3_URL ?? 'https://gcp3-backend-cif7ppahzq-uc.a.run.app';
 
 interface DigestState {
   digest: DigestPayload | null;
@@ -12,7 +12,7 @@ interface DigestState {
 }
 
 export function useDigest(): DigestState {
-  const { getToken, isSignedIn } = useAuth();
+  const { isSignedIn } = useAuth();
   const [digest, setDigest] = useState<DigestPayload | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +21,8 @@ export function useDigest(): DigestState {
   useEffect(() => {
     if (!isSignedIn) {
       setIsLoading(false);
+      setDigest(null);
+      setError(null);
       return;
     }
     let cancelled = false;
@@ -29,13 +31,10 @@ export function useDigest(): DigestState {
 
     (async () => {
       try {
-        const token = await getToken();
-        const res = await fetch(`${PORTAL_URL}/api/signals/digest`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(`${GCP3_URL}/signals`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const raw = await res.json();
-        const data = normaliseDigest(raw, raw.sources ?? []);
+        const data = adaptLiveSignals(raw);
         if (!cancelled) setDigest(data);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load signals');
@@ -45,7 +44,7 @@ export function useDigest(): DigestState {
     })();
 
     return () => { cancelled = true; };
-  }, [isSignedIn, getToken, tick]);
+  }, [isSignedIn, tick]);
 
   return { digest, isLoading, error, refetch: () => setTick(t => t + 1) };
 }
