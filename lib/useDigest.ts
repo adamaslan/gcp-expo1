@@ -21,6 +21,8 @@ export function useDigest(): DigestState {
   useEffect(() => {
     if (!isSignedIn) {
       setIsLoading(false);
+      setDigest(null);
+      setError(null);
       return;
     }
     let cancelled = false;
@@ -42,7 +44,7 @@ export function useDigest(): DigestState {
     })();
 
     return () => { cancelled = true; };
-  }, [isSignedIn, getToken, tick]);
+  }, [isSignedIn, tick]);
 
   return { digest, isLoading, error, refetch: () => setTick(t => t + 1) };
 }

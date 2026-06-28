@@ -38,7 +38,7 @@ export function useNuAI(): NuAIState {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
+          'Accept': 'text/event-stream, application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(body),
@@ -70,17 +70,22 @@ export function useNuAI(): NuAIState {
         await consumeSSE(res, (_delta, accumulated) => {
           setMessages(m => {
             const updated = [...m];
-            const last = updated[updated.length - 1];
-            if (last?.role === 'assistant') {
-              updated[updated.length - 1] = { ...last, content: accumulated };
+            const lastIdx = updated.map(msg => msg.role).lastIndexOf('assistant');
+            if (lastIdx !== -1) {
+              updated[lastIdx] = { ...updated[lastIdx], content: accumulated };
             }
             return updated;
           });
         });
       } else {
         // JSON fallback (server sent buffered response)
-        const data = await res.json() as { message: ChatMessage };
-        setMessages(m => [...m, data.message]);
+        const data = await res.json() as { message?: Partial<ChatMessage> };
+        const msg = data.message;
+        if (msg?.role === 'assistant' && typeof msg.content === 'string') {
+          setMessages(m => [...m, { role: 'assistant', content: msg.content as string, timestamp: msg.timestamp ?? new Date().toISOString() }]);
+        } else {
+          throw new Error('Invalid response from Nu AI');
+        }
       }
     } catch (err) {
       setMessages(previousMessages);

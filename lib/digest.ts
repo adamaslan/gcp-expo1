@@ -59,32 +59,38 @@ export function adaptLiveSignals(raw: unknown): DigestPayload {
   if (!r.symbols || typeof r.symbols !== 'object' || Array.isArray(r.symbols)) {
     throw new Error('Invalid /signals response: symbols must be a plain object');
   }
-  const symbols = r.symbols as Record<string, Record<string, unknown>>;
+  const symbols = r.symbols as Record<string, unknown>;
   const fallbackDate = String(r.updated ?? new Date().toISOString());
 
   // Use Object.entries so the map key (authoritative ticker) is always available
   // even when the inner record omits the redundant `symbol` field.
-  const signals: SignalPayload[] = Object.entries(symbols).map(([symbolKey, s], i) => {
-    const ticker = String(s.symbol ?? symbolKey).trim().toUpperCase();
-    const action = String(s.ai_action ?? '').toUpperCase();
-    const direction: SignalDirection =
-      action === 'BUY' ? 'bullish' : action === 'SELL' ? 'bearish' : 'neutral';
-    const rawConf = String(s.ai_confidence ?? '').toLowerCase();
-    const indicators: string[] = Array.isArray(s.signals)
-      ? (s.signals as Record<string, unknown>[]).map(x => String(x.signal ?? ''))
-      : [];
-    return {
-      id: ticker || `signal-${i}`,
-      ticker,
-      direction,
-      timeframe: 'medium',
-      confidence: safeConfidence(rawConf),
-      title: String(s.ai_summary ?? ''),
-      explanation: String(s.ai_outlook ?? ''),
-      indicators,
-      generatedAt: fallbackDate,
-    };
-  });
+  const signals: SignalPayload[] = Object.entries(symbols)
+    .filter(([, s]) => s !== null && typeof s === 'object' && !Array.isArray(s))
+    .map(([symbolKey, s], i) => {
+      const entry = s as Record<string, unknown>;
+      // symbolKey is the authoritative ticker; fall back to inner field only if key is empty
+      const ticker = String(symbolKey || entry.symbol || '').trim().toUpperCase();
+      const action = String(entry.ai_action ?? '').toUpperCase();
+      const direction: SignalDirection =
+        action === 'BUY' ? 'bullish' : action === 'SELL' ? 'bearish' : 'neutral';
+      const rawConf = String(entry.ai_confidence ?? '').toLowerCase();
+      const indicators: string[] = Array.isArray(entry.signals)
+        ? (entry.signals as Record<string, unknown>[])
+            .map(x => String(x.signal ?? '').trim())
+            .filter(Boolean)
+        : [];
+      return {
+        id: ticker || `signal-${i}`,
+        ticker,
+        direction,
+        timeframe: 'medium',
+        confidence: safeConfidence(rawConf),
+        title: String(entry.ai_summary ?? ''),
+        explanation: String(entry.ai_outlook ?? ''),
+        indicators,
+        generatedAt: fallbackDate,
+      };
+    });
 
   return {
     schemaVersion: DIGEST_SCHEMA_VERSION,
