@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
-import type { ChatMessage, ChatRequest, ChatResponse } from './nuai';
+import type { ChatMessage, ChatRequest } from './nuai';
+import { consumeSSE } from './sse';
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
 
@@ -35,26 +36,54 @@ export function useNuAI(): NuAIState {
       const body: ChatRequest = { messages: nextMessages, portfolioContext };
       const res = await fetch(`${PORTAL_URL}/api/nuai`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(body),
       });
 
       if (res.status === 403) {
-        setMessages(previousMessages); // rollback optimistic message
+        setMessages(previousMessages);
         setUpgradeRequired(true);
         return;
       }
       if (res.status === 429) {
-        setMessages(previousMessages); // rollback optimistic message
+        setMessages(previousMessages);
         setDailyLimitReached(true);
         return;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const data: ChatResponse = await res.json();
-      setMessages(m => [...m, data.message]);
+      const contentType = res.headers.get('content-type') ?? '';
+
+      if (contentType.includes('text/event-stream')) {
+        // Streaming path: add empty assistant placeholder, fill in as tokens arrive
+        const placeholder: ChatMessage = {
+          role: 'assistant',
+          content: '',
+          timestamp: new Date().toISOString(),
+        };
+        setMessages(m => [...m, placeholder]);
+
+        await consumeSSE(res, (_delta, accumulated) => {
+          setMessages(m => {
+            const updated = [...m];
+            const last = updated[updated.length - 1];
+            if (last?.role === 'assistant') {
+              updated[updated.length - 1] = { ...last, content: accumulated };
+            }
+            return updated;
+          });
+        });
+      } else {
+        // JSON fallback (server sent buffered response)
+        const data = await res.json() as { message: ChatMessage };
+        setMessages(m => [...m, data.message]);
+      }
     } catch (err) {
-      setMessages(previousMessages); // rollback on network/parse error
+      setMessages(previousMessages);
       setError(err instanceof Error ? err.message : 'Failed to reach Nu AI');
     } finally {
       setIsLoading(false);
