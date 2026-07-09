@@ -23,6 +23,16 @@ function safeConfidence(v: unknown): SignalConfidence {
   return VALID_CONFIDENCES.has(String(v)) ? (v as SignalConfidence) : 'low';
 }
 
+/** Signals older than this are flagged stale — daily-refresh data plus a margin for weekends/delays. */
+const STALE_THRESHOLD_MS = 26 * 60 * 60 * 1000;
+
+/** Data-quality guard: true when a signal's timestamp is missing/unparsable or older than the threshold. */
+function computeIsStale(generatedAt: string): boolean {
+  const ms = Date.parse(generatedAt);
+  if (Number.isNaN(ms)) return true;
+  return Date.now() - ms > STALE_THRESHOLD_MS;
+}
+
 export interface SignalPayload {
   id: string;
   ticker: string;
@@ -36,6 +46,16 @@ export interface SignalPayload {
   /** Which indicators contributed (e.g. ["RSI", "MACD", "Volume"]) */
   indicators: string[];
   generatedAt: string; // ISO
+  /** Weighted confluence score in [-1, 1], when the source computes one */
+  score?: number;
+  /** Per-indicator explanations backing the signal (one sentence each) */
+  reasons?: string[];
+  /** How many contributing signals were bullish/bearish/total, when available */
+  signalCounts?: { bullish: number; bearish: number; total: number };
+  /** True when generatedAt is missing or older than the freshness threshold — display boundary must gate on this */
+  isStale: boolean;
+  /** Which scoring engine/version produced this signal, when the source reports one (provenance) */
+  engineVersion?: string;
 }
 
 export interface DigestPayload {
@@ -74,11 +94,16 @@ export function adaptLiveSignals(raw: unknown): DigestPayload {
       const direction: SignalDirection =
         action === 'BUY' ? 'bullish' : action === 'SELL' ? 'bearish' : 'neutral';
       const rawConf = String(entry.ai_confidence ?? '').toLowerCase();
-      const indicators: string[] = Array.isArray(entry.signals)
+      const rawSignals = Array.isArray(entry.signals)
         ? (entry.signals as Record<string, unknown>[])
-            .map(x => String(x.signal ?? '').trim())
-            .filter(Boolean)
         : [];
+      const indicators: string[] = rawSignals.map(x => String(x.signal ?? '').trim()).filter(Boolean);
+      const reasons: string[] = rawSignals.map(x => String(x.detail ?? '').trim()).filter(Boolean);
+      const score = typeof entry.confluence_score === 'number' ? entry.confluence_score : undefined;
+      const bullish = typeof entry.bull_count === 'number' ? entry.bull_count : undefined;
+      const bearish = typeof entry.bear_count === 'number' ? entry.bear_count : undefined;
+      const total = typeof entry.signal_count === 'number' ? entry.signal_count : undefined;
+      const engineVersion = typeof entry.engine_version === 'string' ? entry.engine_version : undefined;
       return {
         id: ticker || `signal-${i}`,
         ticker,
@@ -89,6 +114,14 @@ export function adaptLiveSignals(raw: unknown): DigestPayload {
         explanation: String(entry.ai_outlook ?? ''),
         indicators,
         generatedAt: fallbackDate,
+        score,
+        reasons: reasons.length > 0 ? reasons : undefined,
+        signalCounts:
+          bullish !== undefined && bearish !== undefined && total !== undefined
+            ? { bullish, bearish, total }
+            : undefined,
+        isStale: computeIsStale(fallbackDate),
+        engineVersion,
       };
     });
 
@@ -112,6 +145,7 @@ export function normaliseDigest(raw: unknown, sources: string[]): DigestPayload 
   const rawSignals = Array.isArray(r.signals) ? r.signals : [];
   const signals: SignalPayload[] = rawSignals.map((s: unknown, i: number) => {
     const sig = (s ?? {}) as Record<string, unknown>;
+    const generatedAt = String(sig.generated_at ?? sig.generatedAt ?? fallbackDate);
     return {
       id: String(sig.id ?? `signal-${i}`),
       ticker: String(sig.ticker ?? ''),
@@ -121,7 +155,8 @@ export function normaliseDigest(raw: unknown, sources: string[]): DigestPayload 
       title: String(sig.title ?? sig.summary ?? ''),
       explanation: String(sig.explanation ?? sig.why ?? sig.reason ?? ''),
       indicators: Array.isArray(sig.indicators) ? sig.indicators.map(String) : [],
-      generatedAt: String(sig.generated_at ?? sig.generatedAt ?? fallbackDate),
+      generatedAt,
+      isStale: computeIsStale(generatedAt),
     };
   });
 
