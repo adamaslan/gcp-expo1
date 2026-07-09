@@ -38,6 +38,9 @@ export default function DigestScreen() {
         <Text style={styles.period}>{digest.periodLabel}</Text>
         <Text style={styles.count}>{digest.signals.length} signal{digest.signals.length !== 1 ? 's' : ''}</Text>
       </View>
+      {digest.degraded && (
+        <Text style={styles.degradedBanner}>⚠ Live signals are unavailable — showing the last cached digest.</Text>
+      )}
       {digest.signals.map(sig => (
         <SignalDigestCard key={sig.id} signal={sig} />
       ))}
@@ -53,5 +56,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   period: { fontSize: 17, fontWeight: '700', color: '#111' },
   count: { fontSize: 13, color: '#6b7280' },
+  degradedBanner: { fontSize: 12, color: '#b45309', backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a', borderRadius: 6, padding: 8, marginBottom: 12 },
   disclaimer: { fontSize: 11, color: '#9ca3af', textAlign: 'center', marginVertical: 20, lineHeight: 16 },
 });
