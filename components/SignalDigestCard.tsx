@@ -81,9 +81,9 @@ export function SignalDigestCard({ signal }: SignalDigestCardProps) {
       {expanded && (
         <View style={styles.explanation}>
           <Text style={styles.explanationText}>{signal.explanation}</Text>
-          {(signal.score !== undefined || signal.signalCounts) && (
+          {(typeof signal.score === 'number' || signal.signalCounts) && (
             <Text style={styles.scoreText}>
-              {signal.score !== undefined ? `Confluence score: ${signal.score.toFixed(2)}` : ''}
+              {typeof signal.score === 'number' ? `Confluence score: ${signal.score.toFixed(2)}` : ''}
               {signal.signalCounts
                 ? ` (${signal.signalCounts.bullish} bullish / ${signal.signalCounts.bearish} bearish of ${signal.signalCounts.total})`
                 : ''}
@@ -106,7 +106,9 @@ export function SignalDigestCard({ signal }: SignalDigestCardProps) {
             </View>
           )}
           {signal.engineVersion && (
-            <Text style={styles.provenanceText}>Source: {signal.engineVersion} · {signal.generatedAt}</Text>
+            <Text style={styles.provenanceText}>
+              Source: {signal.engineVersion} · {new Date(signal.generatedAt).toLocaleDateString()}
+            </Text>
           )}
         </View>
       )}

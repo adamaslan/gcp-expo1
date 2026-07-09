@@ -95,7 +95,9 @@ export function adaptLiveSignals(raw: unknown): DigestPayload {
         action === 'BUY' ? 'bullish' : action === 'SELL' ? 'bearish' : 'neutral';
       const rawConf = String(entry.ai_confidence ?? '').toLowerCase();
       const rawSignals = Array.isArray(entry.signals)
-        ? (entry.signals as Record<string, unknown>[])
+        ? (entry.signals as unknown[]).filter(
+            (x): x is Record<string, unknown> => x !== null && typeof x === 'object' && !Array.isArray(x),
+          )
         : [];
       const indicators: string[] = rawSignals.map(x => String(x.signal ?? '').trim()).filter(Boolean);
       const reasons: string[] = rawSignals.map(x => String(x.detail ?? '').trim()).filter(Boolean);
@@ -157,6 +159,13 @@ export function normaliseDigest(raw: unknown, sources: string[]): DigestPayload 
       indicators: Array.isArray(sig.indicators) ? sig.indicators.map(String) : [],
       generatedAt,
       isStale: computeIsStale(generatedAt),
+      score: typeof sig.score === 'number' ? sig.score : undefined,
+      reasons: Array.isArray(sig.reasons) ? sig.reasons.map(String) : undefined,
+      signalCounts:
+        sig.signalCounts && typeof sig.signalCounts === 'object'
+          ? (sig.signalCounts as SignalPayload['signalCounts'])
+          : undefined,
+      engineVersion: typeof sig.engineVersion === 'string' ? sig.engineVersion : undefined,
     };
   });
 
