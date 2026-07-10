@@ -42,7 +42,7 @@ export function useDigest(): DigestState {
     })();
 
     return () => { cancelled = true; };
-  }, [isSignedIn, getToken, tick]);
+  }, [isSignedIn, tick]);
 
   return { digest, isLoading, error, refetch: () => setTick(t => t + 1) };
 }
