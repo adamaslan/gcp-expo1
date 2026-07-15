@@ -170,8 +170,8 @@ const styles = StyleSheet.create({
   errorBox: {
     marginTop: spacing.md,
     padding: spacing.md,
-    backgroundColor: 'rgba(244,63,94,0.1)',
-    borderColor: 'rgba(244,63,94,0.3)',
+    backgroundColor: 'rgba(255,59,92,0.1)',
+    borderColor: 'rgba(255,59,92,0.3)',
     borderWidth: 1,
     borderRadius: radius.md,
   },

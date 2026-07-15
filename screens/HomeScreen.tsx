@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, Pressable, ScrollView, ActivityIndicator } from
 import { useUser } from '@clerk/clerk-expo';
 import { useAuthContext } from '../lib/auth-provider';
 import { getMarketOverview, getMacroPulse, type MarketOverview, type MacroPulse } from '../lib/clients/gcp3';
+import { theme } from '../lib/ui/theme';
 
 type LoadState<T> = { status: 'idle' } | { status: 'loading' } | { status: 'ok'; data: T } | { status: 'error'; message: string };
 
@@ -21,9 +22,9 @@ function useFetch<T>(fetcher: () => Promise<T>): LoadState<T> {
 
 function SentimentBadge({ sentiment }: { sentiment: string }) {
   const colors: Record<string, { bg: string; text: string }> = {
-    bullish: { bg: '#e8f5e9', text: '#2e7d32' },
-    bearish: { bg: '#ffebee', text: '#c62828' },
-    neutral: { bg: '#f5f5f5', text: '#616161' },
+    bullish: { bg: theme.sentiment.bullish.bg, text: theme.sentiment.bullish.text },
+    bearish: { bg: theme.sentiment.bearish.bg, text: theme.sentiment.bearish.text },
+    neutral: { bg: theme.sentiment.neutral.bg, text: theme.sentiment.neutral.text },
   };
   const c = colors[sentiment] ?? colors.neutral;
   return (
@@ -43,7 +44,7 @@ export default function HomeScreen() {
   if (!isLoaded || !user) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#1976d2" />
+        <ActivityIndicator size="large" color={theme.accent.blue} />
       </View>
     );
   }
@@ -63,7 +64,7 @@ export default function HomeScreen() {
       {/* Market Overview */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Market Overview</Text>
-        {overviewState.status === 'loading' && <ActivityIndicator size="small" color="#1976d2" />}
+        {overviewState.status === 'loading' && <ActivityIndicator size="small" color={theme.accent.blue} />}
         {overviewState.status === 'error' && (
           <Text style={styles.errorText}>{overviewState.message}</Text>
         )}
@@ -89,7 +90,7 @@ export default function HomeScreen() {
       {/* Macro Pulse */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Macro Pulse</Text>
-        {macroState.status === 'loading' && <ActivityIndicator size="small" color="#1976d2" />}
+        {macroState.status === 'loading' && <ActivityIndicator size="small" color={theme.accent.blue} />}
         {macroState.status === 'error' && (
           <Text style={styles.errorText}>{macroState.message}</Text>
         )}
@@ -128,7 +129,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.bg.base,
     paddingTop: 40,
   },
   content: {
@@ -139,10 +140,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333',
+    color: theme.text.primary,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.bg.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 14,
@@ -155,29 +156,29 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: theme.text.primary,
     marginBottom: 10,
   },
   statusLine: {
     fontSize: 14,
-    color: '#555',
+    color: theme.text.secondary,
     marginBottom: 6,
   },
   metricLine: {
     fontSize: 14,
-    color: '#333',
+    color: theme.text.primary,
     marginBottom: 4,
     fontVariant: ['tabular-nums'],
   },
   summary: {
     fontSize: 13,
-    color: '#666',
+    color: theme.text.secondary,
     marginTop: 8,
     lineHeight: 19,
   },
   timestamp: {
     fontSize: 11,
-    color: '#aaa',
+    color: theme.text.muted,
     marginTop: 6,
   },
   badge: {
@@ -192,11 +193,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 13,
-    color: '#c62828',
+    color: theme.accent.red,
   },
   label: {
     fontSize: 11,
-    color: '#999',
+    color: theme.text.muted,
     marginTop: 10,
     marginBottom: 2,
     fontWeight: '600',
@@ -204,17 +205,17 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 14,
-    color: '#333',
+    color: theme.text.primary,
   },
   signOutButton: {
-    backgroundColor: '#f44336',
+    backgroundColor: theme.accent.red,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
   },
   signOutText: {
-    color: '#fff',
+    color: theme.text.inverse,
     fontSize: 16,
     fontWeight: '600',
   },

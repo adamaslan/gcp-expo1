@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   ActivityIndicator, ScrollView, Linking,
 } from 'react-native';
+import { theme } from '../lib/ui/theme';
 import { track } from '../lib/analytics';
 
 const SCHWAB_CONNECT_URL =
@@ -102,7 +103,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   if (step === 'connecting') {
     return (
       <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color={theme.accent.blue} />
         <Text style={styles.loadingText}>Waiting for Schwab authorisation…</Text>
         <TouchableOpacity style={styles.cancelLink} onPress={() => setStep('connect')}>
           <Text style={styles.cancelText}>Cancel</Text>
@@ -143,20 +144,20 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 28, alignItems: 'center', flexGrow: 1, justifyContent: 'center', backgroundColor: '#fff' },
+  container: { padding: 28, alignItems: 'center', flexGrow: 1, justifyContent: 'center', backgroundColor: theme.bg.base },
   center: { flex: 1 },
   emoji: { fontSize: 52, marginBottom: 16 },
-  title: { fontSize: 24, fontWeight: '700', color: '#111', textAlign: 'center', marginBottom: 12 },
-  subtitle: { fontSize: 15, color: '#555', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
+  title: { fontSize: 24, fontWeight: '700', color: theme.text.primary, textAlign: 'center', marginBottom: 12 },
+  subtitle: { fontSize: 15, color: theme.text.secondary, textAlign: 'center', lineHeight: 22, marginBottom: 28 },
   featureList: { width: '100%', gap: 12, marginBottom: 28 },
   featureRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  check: { color: '#16a34a', fontWeight: '700', fontSize: 16 },
-  featureText: { fontSize: 15, color: '#222', flex: 1 },
-  primaryBtn: { width: '100%', backgroundColor: '#2563eb', padding: 16, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  check: { color: theme.accent.green, fontWeight: '700', fontSize: 16 },
+  featureText: { fontSize: 15, color: theme.text.primary, flex: 1 },
+  primaryBtn: { width: '100%', backgroundColor: theme.accent.blue, padding: 16, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
+  primaryBtnText: { color: theme.text.inverse, fontSize: 16, fontWeight: '700' },
   skipBtn: { padding: 8 },
-  skipText: { color: '#9ca3af', fontSize: 14 },
-  loadingText: { marginTop: 16, color: '#555', fontSize: 15, textAlign: 'center' },
+  skipText: { color: theme.text.muted, fontSize: 14 },
+  loadingText: { marginTop: 16, color: theme.text.secondary, fontSize: 15, textAlign: 'center' },
   cancelLink: { marginTop: 16, padding: 8 },
-  cancelText: { color: '#9ca3af', fontSize: 14 },
+  cancelText: { color: theme.text.muted, fontSize: 14 },
 });

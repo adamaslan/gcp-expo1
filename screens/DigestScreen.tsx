@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { theme } from '../lib/ui/theme';
 import { useDigest } from '../lib/useDigest';
 import { SignalDigestCard } from '../components/SignalDigestCard';
 import { StateView } from '../components/StateView';
@@ -38,6 +39,9 @@ export default function DigestScreen() {
         <Text style={styles.period}>{digest.periodLabel}</Text>
         <Text style={styles.count}>{digest.signals.length} signal{digest.signals.length !== 1 ? 's' : ''}</Text>
       </View>
+      {digest.degraded && (
+        <Text style={styles.degradedBanner}>⚠ Live signals are unavailable — showing the last cached digest.</Text>
+      )}
       {digest.signals.map(sig => (
         <SignalDigestCard key={sig.id} signal={sig} />
       ))}
@@ -49,9 +53,10 @@ export default function DigestScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb', padding: 16 },
+  container: { flex: 1, backgroundColor: theme.bg.base, padding: 16 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  period: { fontSize: 17, fontWeight: '700', color: '#111' },
-  count: { fontSize: 13, color: '#6b7280' },
-  disclaimer: { fontSize: 11, color: '#9ca3af', textAlign: 'center', marginVertical: 20, lineHeight: 16 },
+  period: { fontSize: 17, fontWeight: '700', color: theme.text.primary },
+  count: { fontSize: 13, color: theme.text.secondary },
+  degradedBanner: { fontSize: 12, color: theme.accent.yellow, backgroundColor: 'rgba(244,184,63,0.1)', borderWidth: 1, borderColor: 'rgba(244,184,63,0.35)', borderRadius: 6, padding: 8, marginBottom: 12 },
+  disclaimer: { fontSize: 11, color: theme.text.muted, textAlign: 'center', marginVertical: 20, lineHeight: 16 },
 });
