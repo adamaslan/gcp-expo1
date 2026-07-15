@@ -27,14 +27,12 @@ export function useDigest(): DigestState {
 
   useEffect(() => {
     if (!isSignedIn) {
+      // Clear fallback cache on sign-out — prevents a different user's digest
+      // leaking via graceful-degradation on a shared device.
       lastGoodDigest = null;
       setIsLoading(false);
       setDigest(null);
       setError(null);
-      // Clear the in-process fallback cache on sign-out — otherwise a
-      // subsequent fetch failure for a *different* signed-in user could
-      // fall back to the previous user's cached digest.
-      lastGoodDigest = null;
       return;
     }
     let cancelled = false;
