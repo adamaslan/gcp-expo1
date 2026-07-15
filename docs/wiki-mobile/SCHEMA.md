@@ -128,6 +128,18 @@ Use placeholders:
    - Design decision revealed? Create or update `decision-*.md`
    - Contradiction with existing page? Mark it inline on both pages
 4. **Never copy verbatim** — synthesize, integrate, cross-link
+
+## On PR Creation
+
+Whenever a PR is opened for this repo (`gh pr create`), treat the PR as an
+ingest source before finishing the task:
+
+1. **Secret scan** — grep the diff for credentials before reading
+2. **Read the diff + PR description** — extract key facts, decisions, contradictions
+3. **Identify which pages to create or update** (same logic as On Ingest above)
+4. **Never copy verbatim** — synthesize, integrate, cross-link
+5. Update `index.md` if new pages were added
+6. Append to `log.md`: `## [{date}] ingest | PR #{number} {title} | pages touched: N`
 5. **Update index.md** — add any new pages
 6. **Append to log.md** — `## [{date}] ingest | {source title} | pages touched: N`
 

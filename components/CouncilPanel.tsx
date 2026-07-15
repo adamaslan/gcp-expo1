@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     color: theme.text.primary,
     paddingLeft: spacing.md,
     borderLeftWidth: 2,
-    borderLeftColor: theme.accent.indigoDeep,
+    borderLeftColor: theme.accent.indigo,
   },
   sourcesWrap: {
     marginTop: spacing.xs,

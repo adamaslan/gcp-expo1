@@ -66,3 +66,51 @@ First full sync since the initial wiki creation. Triggered by the merge of:
 - No secrets in any new page (no Clerk keys, no Cloud Run URLs, no GCP project IDs): ✅
 - All new pages have ≥3 cross-links to other wiki pages: ✅
 - log.md entry present: ✅ (this entry)
+
+## [2026-07-02] sync | PR #12–#24 (12 PRs, Weeks 1-14 product build) | pages touched: 8
+
+Wiki was 5+ weeks stale (last sync 2026-05-23). Since then, 12 PRs shipped a
+near-complete product build: auth hardening + rebrand (#12), landing pages
+(#13), billing/paywall (#14), stability + beta (#15), signal digest + Nu AI
+(#16), portfolio hooks (#17), app store metadata (#18), push + share (#19),
+retention streak/trial banner (#20), settings/billing UI (#21), authenticated
+checkout (#22), and a streaming regression fix (#24).
+
+**New pages created (4):**
+- `entity-billing.md` — Clerk-sourced subscription status, Settings tab, authenticated checkout (not browser redirect, as of PR #22)
+- `entity-retention.md` — streak tracking, push opt-in (never-prompt-on-first-launch), native share sheet, trial expiry banner
+- `entity-signals-digest.md` — schema-versioned `lib/digest.ts`, `adaptLiveSignals`, `SignalDigestCard`
+- `entity-nuai.md` — chat contract, refusal guardrails, token budget, SSE streaming fix (PR #24)
+
+**Updated pages (4):**
+- `overview.md` — full re-sync: health table +6 rows, entity map +4 entities, open issues +2 (digest adapter divergence, legal consent parity)
+- `index.md` — added Product section (4 new entities), Open Cross-Wiki Items section
+- `log.md` — this entry
+
+**Cross-repo finding surfaced this sync:**
+- `nuwrrrld-portal`'s `docs/live-data-wiring.md` (2026-06-27) independently drafts an `adaptLiveSignals` adapter that disagrees with mobile's `lib/digest.ts` version on error handling and field mapping. Flagged as an open issue in both this wiki (`overview.md` #6) and the new `nuwrrrld-portal` wiki being created in this same session — needs a real reconciliation pass, not just documentation.
+- `docs/todo1.md` in `nuwrrrld-portal` requires ToS/Privacy consent checkboxes at sign-up on **both** apps; portal has the routes, mobile parity unconfirmed — flagged as `overview.md` open issue #7.
+
+**Not covered this sync (lower priority / needs deeper read):**
+- `lib/portfolio.ts` (Week 7-8 portfolio intelligence hooks, PR #17) — no entity page yet
+- `lib/schwab-health.ts`, `lib/sentry.ts`, `lib/analytics.ts` — cross-cutting utilities added across several PRs, not yet given entity pages
+- `landing/` static HTML pages (PR #12/#13 rebrand) — not wiki-linked
+- App Store submission status (metadata present per PR #18, but submission itself not verifiable from repo state)
+
+**Schema compliance check:**
+- New entity pages have required sections (What it is, Where used, Known failures, Open questions, See also): ✅
+- New pages added to `index.md` under Entities: ✅
+- No secrets in any new page: ✅
+- All new pages have ≥3 cross-links: ✅
+- log.md entry present: ✅ (this entry)
+
+## [2026-07-15] ingest | PR #27 style(mobile): migrate all screens to dark neon theme palette | pages touched: 3
+
+PR #27 replaced the indigo-based dark palette in `lib/ui/theme.ts` with the portal-aligned neon-cyan palette (`#2fd8ff` accent, `#06070d` base). Five screen StyleSheets migrated from hardcoded hex to theme tokens: NuAIScreen, OnboardingScreen, DigestScreen, HomeScreen, SignInScreen. CouncilPanel fixed to use `theme.accent.indigo` instead of removed `theme.accent.indigoDeep`.
+
+**Pages created (1):**
+- `decision-neon-dark-theme-palette.md` — records the palette unification decision, alternatives rejected, and open question about a shared `@nuwrrrld/tokens` package
+
+**Pages updated (2):**
+- `index.md` — added new decision under Active Decisions
+- `log.md` — this entry
