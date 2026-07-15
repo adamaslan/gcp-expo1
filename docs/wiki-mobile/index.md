@@ -1,6 +1,6 @@
 # Wiki Index — gcp3-mobile
 
-_Last updated: 2026-05-23 (post-PR-#5/#6 sync)_
+_Last updated: 2026-07-02 (post-PR-#12..#24 sync)_
 
 Catalog is organized by page type. Read `index.md` first on any query to find relevant pages, then drill in. For the philosophy behind this wiki pattern, see [[ORIGIN]].
 
@@ -32,6 +32,12 @@ One page per named system component. These are the hubs.
 **Dev tooling**
 - [[entity-dev-launcher]] — `npm run dev` and the 5-process orchestration rule
 
+**Product (added 2026-07-02)**
+- [[entity-billing]] — subscription status, Settings tab, authenticated checkout (PR #14, #21, #22)
+- [[entity-retention]] — streak, push opt-in, share sheet, trial banner (PR #19, #20)
+- [[entity-signals-digest]] — schema-versioned digest + `adaptLiveSignals` + `SignalDigestCard` (PR #16)
+- [[entity-nuai]] — chat contract, guardrails, SSE streaming fix (PR #16, #24)
+
 ---
 
 ## Concepts
@@ -58,6 +64,7 @@ Recorded design decisions with rationale, alternatives rejected, and validation 
 - [[decision-aitext-deploy-deferred]] — ai-text-opt isn't deployed on GCP; mobile waits
 - [[decision-1h-session-cap]] — 1h hard cap on both client and server
 - [[decision-dual-view-with-agree]] — "All" filter fires both views in parallel; Agree is opt-in
+- [[decision-neon-dark-theme-palette]] — adopt portal-aligned neon-cyan palette; removes indigoDeep (PR #27)
 
 ---
 
@@ -122,6 +129,11 @@ The mobile app talks to backends documented in their own wikis. Do not edit thos
 - [[Welcome]] — Obsidian vault entry point
 
 ---
+
+## Open Cross-Wiki Items
+
+- Signal digest adapter divergence between mobile and `nuwrrrld-portal` — see [[entity-signals-digest#open-questions]]
+- Legal consent checkbox parity between mobile and portal — see [[overview#open-issues]] item 7
 
 ## Slash commands
 

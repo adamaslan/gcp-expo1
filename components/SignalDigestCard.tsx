@@ -54,11 +54,17 @@ export function SignalDigestCard({ signal }: SignalDigestCardProps) {
             {DIRECTION_ARROW[signal.direction]} {signal.direction}
           </Text>
         </View>
-        <View style={styles.meta}>
-          <Text style={styles.metaText}>{signal.timeframe}</Text>
-          <Text style={styles.metaDot}>·</Text>
-          <Text style={styles.metaText}>{signal.confidence} confidence</Text>
-        </View>
+        {signal.isStale ? (
+          <View style={styles.staleBadge}>
+            <Text style={styles.staleBadgeText}>⚠ Stale data</Text>
+          </View>
+        ) : (
+          <View style={styles.meta}>
+            <Text style={styles.metaText}>{signal.timeframe}</Text>
+            <Text style={styles.metaDot}>·</Text>
+            <Text style={styles.metaText}>{signal.confidence} confidence</Text>
+          </View>
+        )}
       </View>
 
       <Text style={styles.title}>{signal.title}</Text>
@@ -75,6 +81,21 @@ export function SignalDigestCard({ signal }: SignalDigestCardProps) {
       {expanded && (
         <View style={styles.explanation}>
           <Text style={styles.explanationText}>{signal.explanation}</Text>
+          {(typeof signal.score === 'number' || signal.signalCounts) && (
+            <Text style={styles.scoreText}>
+              {typeof signal.score === 'number' ? `Confluence score: ${signal.score.toFixed(2)}` : ''}
+              {signal.signalCounts
+                ? ` (${signal.signalCounts.bullish} bullish / ${signal.signalCounts.bearish} bearish of ${signal.signalCounts.total})`
+                : ''}
+            </Text>
+          )}
+          {signal.reasons && signal.reasons.length > 0 && (
+            <View style={styles.reasons}>
+              {signal.reasons.map((r, i) => (
+                <Text key={i} style={styles.reasonText}>• {r}</Text>
+              ))}
+            </View>
+          )}
           {signal.indicators.length > 0 && (
             <View style={styles.indicators}>
               {signal.indicators.map(ind => (
@@ -83,6 +104,11 @@ export function SignalDigestCard({ signal }: SignalDigestCardProps) {
                 </View>
               ))}
             </View>
+          )}
+          {signal.engineVersion && (
+            <Text style={styles.provenanceText}>
+              Source: {signal.engineVersion} · {new Date(signal.generatedAt).toLocaleDateString()}
+            </Text>
           )}
         </View>
       )}
@@ -106,6 +132,8 @@ const styles = StyleSheet.create({
   meta: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 },
   metaText: { fontSize: 12, color: '#6b7280', textTransform: 'capitalize' },
   metaDot: { fontSize: 12, color: '#9ca3af' },
+  staleBadge: { alignSelf: 'flex-start', backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginTop: 4 },
+  staleBadgeText: { fontSize: 11, color: '#b45309', fontWeight: '600' },
   title: { fontSize: 15, color: '#222', lineHeight: 21, marginBottom: 10 },
   actions: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   whyBtn: { alignSelf: 'flex-start' },
@@ -114,6 +142,10 @@ const styles = StyleSheet.create({
   shareBtnText: { fontSize: 13, color: '#10b981', fontWeight: '600' },
   explanation: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
   explanationText: { fontSize: 14, color: '#374151', lineHeight: 20 },
+  scoreText: { fontSize: 12, color: '#6b7280', marginTop: 8 },
+  reasons: { marginTop: 6, gap: 3 },
+  reasonText: { fontSize: 12, color: '#4b5563', lineHeight: 17 },
+  provenanceText: { fontSize: 10, color: '#9ca3af', marginTop: 8 },
   indicators: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   indicatorChip: { backgroundColor: '#eff6ff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   indicatorText: { fontSize: 12, color: '#2563eb', fontWeight: '600' },

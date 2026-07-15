@@ -1,13 +1,15 @@
 ---
-date: 2026-05-23
+date: 2026-07-02
 type: overview
 tags: [architecture, system-map, mobile]
-sources: [../MULTI_BACKEND_INTEGRATION.md, ../ALL_PHASES_GUIDE.md, ../PHASE4_PHASE5_COMPLETION.md, ../lib/clients/, ../lib/http.ts, ../scripts/dev-all.sh]
+sources: [../MULTI_BACKEND_INTEGRATION.md, ../ALL_PHASES_GUIDE.md, ../PHASE4_PHASE5_COMPLETION.md, ../lib/clients/, ../lib/http.ts, ../scripts/dev-all.sh, PR #12-#24]
 ---
 
 # System Overview — gcp3-mobile
 
 An Expo / React Native client for the gcp3 finance platform. Talks to **three** independent backends — gcp3 (signals, agents, content), holdemfoldem (hold-or-fold verdict), and ai-text-opt (RAG chat). Auth is Clerk Expo with Google OAuth. As of PR #5 + #6 (2026-05-23) all three clients are wired, three feature screens are live, and `npm run dev` orchestrates the entire local stack.
+
+**2026-07-02 sync:** 12 PRs landed since the last wiki sync (#12–#24), taking the app from "wired backends" to a nearly-shippable product: billing/paywall, retention (streaks, push, trial banner, share sheet), signal digest UI, Nu AI chat with streaming, portfolio intelligence hooks, app store metadata, and a NuWrrrld Financial rebrand + landing pages. See [[entity-billing]], [[entity-retention]], [[entity-signals-digest]], [[entity-nuai]] — all new this sync.
 
 ## Stack
 
@@ -68,7 +70,13 @@ The named components and their relationships. Each has its own wiki page.
 **Dev tooling**
 - [[entity-dev-launcher]] — `scripts/dev-all.sh` + `npm run dev`; starts gcp3, holdfold, chromadb, embed-service, ai-text Next.js, and Expo together
 
-## Current System Health (2026-05-23)
+**Product (added 2026-07-02 sync)**
+- [[entity-billing]] — subscription status (Clerk-sourced), Settings tab, authenticated checkout
+- [[entity-retention]] — streak tracking, push notification opt-in, native share sheet, trial expiry banner
+- [[entity-signals-digest]] — schema-versioned digest payload + `adaptLiveSignals`, `SignalDigestCard`
+- [[entity-nuai]] — chat contract, refusal guardrails, token budget, SSE streaming
+
+## Current System Health (2026-07-02)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
@@ -86,6 +94,12 @@ The named components and their relationships. Each has its own wiki page.
 | Type generation from OpenAPI | ⚠️ Wired in package.json, not run | `npm run gen:types` exists; hand-rolled types remain in clients |
 | Auth on backends | ❌ None | All three backends still open; mobile sends no bearer token. `getToken()` in shim returns `null`. |
 | Dev launcher | ✅ `npm run dev` | Starts 5 backend processes + Expo with trap-cleanup. See [[entity-dev-launcher]]. |
+| Billing / paywall | ✅ Wired | Authenticated checkout call as of PR #22 (was browser redirect). See [[entity-billing]]. |
+| Retention (streak, push, share) | ✅ Wired | Weeks 11-14, PR #19-#20. See [[entity-retention]]. |
+| Signal digest UI | ✅ Wired | `SignalDigestCard` + schema-versioned `lib/digest.ts`. See [[entity-signals-digest]]. |
+| Nu AI chat | ✅ Wired, streaming fixed | SSE regression fixed PR #24. See [[entity-nuai]]. |
+| App Store metadata | ✅ Present | `app-store/metadata.json`, `app.json` updated PR #18. Not yet submitted (not verifiable from repo state). |
+| Landing pages / rebrand | ✅ Present | `landing/` dir, NuWrrrld Financial brand (PR #12, #13). Static HTML, not yet cross-linked to a wiki page. |
 
 ## Key Design Decisions
 
@@ -110,6 +124,8 @@ The named components and their relationships. Each has its own wiki page.
 3. **Per-backend circuit breaker missing** — [[entity-resilience-layer]] retries per-call, not per-backend. A gcp3 outage doesn't yet isolate holdfold/ai-text. See [[decision-single-backend-url-was-temporary#validated-by]].
 4. **No type generation run** — `npm run gen:types` is in package.json but hand-rolled types remain in `lib/clients/*.ts`. Violates [[decision-no-handrolled-types]] over time as backend schemas drift.
 5. **Server-side session cap not configured** — client-side 1h cap is enforced in [[entity-clerk-expo]], but Clerk Dashboard "Token lifetime" must be set to 3600s for defense in depth. Tracked in [[../PRODUCTION_CLERK.md]].
+6. **Signal digest adapter may have diverged from portal** — mobile's `lib/digest.ts` `adaptLiveSignals` and the adapter drafted in `nuwrrrld-portal`'s `docs/live-data-wiring.md` (2026-06-27) disagree on error handling (throw vs. null) and some field mappings. Per [[concept-backend-is-source-of-truth]] there should be one canonical adapter shared via `lib/`, not two independently-evolved copies. See [[entity-signals-digest#open-questions]].
+7. **Legal consent pages requested but not confirmed shipped** — `nuwrrrld-portal`'s `docs/todo1.md` records a requirement to add Terms of Service / Privacy Policy consent checkboxes at sign-up on **both** apps (portal has `app/terms-of-service/` and `app/privacy-policy/` routes; mobile has no equivalent found in this sync — worth a follow-up ingest once confirmed either way).
 
 ## See Also
 
