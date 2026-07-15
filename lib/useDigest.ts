@@ -27,6 +27,7 @@ export function useDigest(): DigestState {
 
   useEffect(() => {
     if (!isSignedIn) {
+      lastGoodDigest = null;
       setIsLoading(false);
       setDigest(null);
       setError(null);
