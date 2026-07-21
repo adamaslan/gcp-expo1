@@ -114,3 +114,15 @@ PR #27 replaced the indigo-based dark palette in `lib/ui/theme.ts` with the port
 **Pages updated (2):**
 - `index.md` — added new decision under Active Decisions
 - `log.md` — this entry
+
+## [2026-07-21] ingest | PR #28 Prompt chips, signals workbench, watchlist screen, haptics, skeletons | pages touched: 4
+
+PR #28 closed most of the mobile Phase B/C catch-up items from `homebase/interactivity-15.md`: Nu AI prompt chips + a watchlist-context chip, `lib/shared/signalFilters.ts` + search/filter/sort on DigestScreen (persisted via new `lib/shared/prefs.ts`), `expo-haptics` across HoldFold/Digest/NuAI taps, a new Portfolio tab wiring the previously-unused `usePortfolio` hook, and skeleton loading placeholders in `StateView`. Companion portal-side PR (adamaslan/nuwrrrld-portal#39) added ticker-mention grounding to Nu AI's system prompt and extracted the matching `signalFilters.ts`/`prompts.ts` there.
+
+**Pages created (1):**
+- `entity-portfolio.md` — new entity; documents `usePortfolio`/`portfolio.ts` getting a real UI consumer for the first time, plus the same-day portal env-var incident that broke its health score data source
+
+**Pages updated (3):**
+- `entity-nuai.md` — `lib/sse.ts` relocation to `lib/shared/`, prompt chips, watchlist-context chip, portal-side ticker grounding
+- `entity-signals-digest.md` — new `lib/shared/signalFilters.ts` + `lib/shared/prefs.ts`, DigestScreen search/filter/sort
+- `index.md` — added `entity-portfolio`, updated `entity-nuai` line, bumped last-updated date

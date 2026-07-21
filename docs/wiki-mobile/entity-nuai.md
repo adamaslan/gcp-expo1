@@ -1,8 +1,8 @@
 ---
-date: 2026-07-02
+date: 2026-07-21
 type: entity
-tags: [nuai, chat, llm, guardrails, mobile]
-sources: [lib/nuai.ts, PR #16, PR #24]
+tags: [nuai, chat, llm, guardrails, mobile, haptics]
+sources: [lib/nuai.ts, screens/NuAIScreen.tsx, PR #16, PR #24, PR #28]
 ---
 
 # entity: Nu AI Assistant
@@ -25,9 +25,26 @@ PR #24 fixed a **streaming regression**: introduced a shared `consumeSSE`
 helper and switched the chat UI to a proper SSE client, replacing whatever
 non-streaming or broken-streaming path shipped in PR #16.
 
+PR #28 relocated `consumeSSE` to `lib/shared/sse.ts` (matching the
+`lib/shared/` convention used for filter/prefs helpers, see
+[[entity-signals-digest]]) and added two catch-up features:
+`SUGGESTED_PROMPTS` (a chip strip in the empty state, mirroring the portal's
+`NuAIChat.tsx`) and a "today's signals for my watchlist" chip that passes
+`portfolioContext` — the previously-unused watchlist-context field in
+`ChatRequest` — sourced from `usePortfolio()`'s watchlist (see new
+[[entity-portfolio]]). `expo-haptics` light-impact fires on send/chip taps,
+success notification on the assistant's reply arriving.
+
+Portal-side companion (adamaslan/nuwrrrld-portal#39, same date): the chat
+route now detects a tracked-ticker mention in the user's message and injects
+a `=== REAL DATA ===` grounding line via a new shared `signal-lookup.ts`,
+plus a system-prompt line clarifying the app tracks sector/industry ETFs and
+the user's watchlist, not individual equities in general — so an honest
+"no data for that ticker" answer doesn't read like a broken feature.
+
 ## Where used
 
-- Chat tab (`app/(tabs)/chat.tsx`).
+- Chat tab (`app/(tabs)/chat.tsx`), rendered via `screens/NuAIScreen.tsx`.
 - `NU_AI_DISCLAIMER` string is surfaced in the chat UI per compliance
   (informational-only, not personalized advice).
 
