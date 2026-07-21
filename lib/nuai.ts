@@ -4,6 +4,13 @@
  * and enforce rate limits. This module defines the contract both surfaces use.
  */
 
+export const SUGGESTED_PROMPTS = [
+  "Explain today's signals",
+  "What's the market tone?",
+  "Is my watchlist overconcentrated?",
+  "What does RSI indicate right now?",
+];
+
 export const NU_AI_DISCLAIMER =
   'Nu AI provides informational responses only and is not personalised financial, ' +
   'investment, legal, or tax advice. Always perform your own due diligence.';

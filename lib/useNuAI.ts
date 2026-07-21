@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
 import type { ChatMessage, ChatRequest } from './nuai';
-import { consumeSSE } from './sse';
+import { consumeSSE } from './shared/sse';
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
 

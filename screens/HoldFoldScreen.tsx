@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { analyzeHoldFold, type HoldFoldVerdict, type Verdict } from '../lib/clients/holdfold';
 import { buildShortTermPrompt } from '../lib/clients/council';
 import CouncilPanel from '../components/CouncilPanel';
@@ -31,10 +32,12 @@ export default function HoldFoldScreen() {
   async function analyze() {
     const clean = symbol.trim().toUpperCase();
     if (!clean) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setState({ status: 'loading' });
     try {
       const verdict = await analyzeHoldFold({ symbol: clean, period });
       setState({ status: 'ok', verdict });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (err) {
       setState({ status: 'error', message: err instanceof Error ? err.message : String(err) });
     }
@@ -70,7 +73,10 @@ export default function HoldFoldScreen() {
             {PERIODS.map((p) => (
               <Pressable
                 key={p}
-                onPress={() => setPeriod(p)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  setPeriod(p);
+                }}
                 style={[styles.periodPill, period === p && styles.periodPillActive]}
               >
                 <Text style={[styles.periodText, period === p && styles.periodTextActive]}>
