@@ -105,6 +105,22 @@ parity" is undefined and should not be counted for or against the sync %.
 5. Record the AI Council convergence decision.
 6. Port observability (analytics/Sentry) to portal; port backtest to mobile (or decide against).
 
+## Where it appears
+
+This page is the actionable half of the parity pair — where
+[[concept-mobile-web-parity]] measures, this one plans. The work it describes
+lands in:
+
+- `lib/shared/` in both repos — the target destination for every §1 de-drift
+  item, and the folder whose portal-only files (`signal-policy.ts`,
+  `live-price.ts`, `holdfold-map.ts`) generate most of the current gap.
+- `lib/subscription.ts`, `lib/digest.ts`, `lib/signalCard.ts`, `lib/nuai.ts` —
+  the duplicated-by-filename modules §1 tracks.
+- `lib/clients/` — where the divergent Hold/Fold and council integrations that
+  block several §1 items actually live on this surface.
+- The `nuwrrrld-fullstack` skill — the intended mechanism for single-sourcing
+  cross-surface business logic.
+
 ## Contradictions / tensions
 
 > ❓ Open question: is there a shared package (npm workspace / git subtree) planned,
