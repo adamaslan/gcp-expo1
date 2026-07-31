@@ -46,6 +46,8 @@ One page per named system component. These are the hubs.
 Cross-cutting patterns and design philosophy.
 
 - [[concept-council-tap-in]] — LLM calls never auto-fire; user must tap (Rule 4 of the $5/mo cost guard)
+- [[concept-test-strategy]] — documents an absence: no test framework exists; what to build first and why
+- [[concept-free-tier-resilience]] — GCP infra free tiers (cost scales with cron, not users) and quota-vs-outage failure
 - [[concept-backend-is-source-of-truth]] — generate types from backend OpenAPI; never hand-mirror
 - [[concept-mobile-web-parity]] — how synced this app and the web portal are (~62%, 2026-07-24 after portal PR #40; PR #42 unchanged, PR #43 +1 row) + full parity matrix
 - [[concept-sync-requirements]] — what each surface needs to reach parity (de-drift, port, converge)

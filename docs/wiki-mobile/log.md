@@ -4,6 +4,39 @@ Append-only chronological record of every wiki operation. See [[SCHEMA#log-forma
 
 ---
 
+## [2026-07-30] ingest | testing + free-tier robustness pages (mirror) | pages touched: 3
+
+Created the mobile counterparts to the portal's two new concept pages.
+
+- `concept-test-strategy.md` — documents an **absence** honestly: this repo has
+  no test framework and no test files (no jest/vitest/testing-library/detox in
+  package.json). What exists is `npm run smoke` (backend reachability, not a
+  test suite) and `npm run gen:types`, which is the de facto contract check —
+  a backend shape change becomes a build-time type error. Argues the first
+  tests should target `lib/subscription.ts`, `lib/retention.ts`,
+  `lib/portfolio.ts` and `lib/shared/*`: pure logic needing no RN runtime, and
+  testing them here turns [[concept-mobile-web-parity]]'s "byte-identical"
+  claims into something *enforced* rather than asserted. Portal PR #45 drifted
+  `subscription.ts` and nothing on this side noticed.
+- `concept-free-tier-resilience.md` — mobile's free tier is a different axis
+  from the portal's: GCP always-free infra, not free model inference. Key
+  framing recorded: **cost scales with cron cadence, not users** (the nightly
+  bake is the budget; 10–100 DAU adds pennies). Carries across the portal's
+  2026-07-30 lesson — enumerate which free-tier limits are per-resource vs.
+  per-account, because redundancy only helps against the former.
+
+Sharpest finding, **verified in code**: [[entity-resilience-layer]]'s policy
+table claims "Retry on 4xx: Never" and states the values were checked against
+the source — but `withRetry`'s default is
+`shouldRetry = (error) => !error.message.includes("validation")`
+(`lib/resilience/network-resilience.ts:22`), which retries every error not
+containing that substring, 4xx and **429** included, up to 3 attempts. Retry is
+right for an outage and harmful for a quota failure: it spends the budget that
+is already exhausted, turning one rejected request into three. Marked as a
+contradiction on `entity-resilience-layer.md` (page vs. code) and recorded as
+hardening item #1 on the new free-tier page. Not fixed — code change, not a
+docs change.
+
 ## [2026-07-30] sync | portal PR #46 parity check (mirror) — new lib/shared/holdfold-map.ts, Daily Brief row added | pages touched: 3
 
 Portal fixed `/api/brief` (was calling a nonexistent `/holdfold` endpoint and
