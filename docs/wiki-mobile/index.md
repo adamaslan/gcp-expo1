@@ -1,6 +1,6 @@
 # Wiki Index — gcp3-mobile
 
-_Last updated: 2026-07-21 (post-PR-#28 sync)_
+_Last updated: 2026-07-30 (portal PR #46 parity check — new lib/shared/holdfold-map.ts, Daily Brief matrix row added, headline ~60%)_
 
 Catalog is organized by page type. Read `index.md` first on any query to find relevant pages, then drill in. For the philosophy behind this wiki pattern, see [[ORIGIN]].
 
@@ -47,6 +47,8 @@ Cross-cutting patterns and design philosophy.
 
 - [[concept-council-tap-in]] — LLM calls never auto-fire; user must tap (Rule 4 of the $5/mo cost guard)
 - [[concept-backend-is-source-of-truth]] — generate types from backend OpenAPI; never hand-mirror
+- [[concept-mobile-web-parity]] — how synced this app and the web portal are (~62%, 2026-07-24 after portal PR #40; PR #42 unchanged, PR #43 +1 row) + full parity matrix
+- [[concept-sync-requirements]] — what each surface needs to reach parity (de-drift, port, converge)
 - [[concept-archive-not-delete]] — when docs/code go obsolete, move to archive, never `rm`
 - ~~[[concept-single-backend-assumption]]~~ — **resolved 2026-05-23** by PR #5; kept for historical context
 
