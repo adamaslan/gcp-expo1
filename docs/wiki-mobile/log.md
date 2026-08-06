@@ -262,3 +262,5 @@ screen once the route lands.
 
 Full write-up:
 `nuwrrrld-portal/docs/wiki-portal/incident-2026-07-26-portfolio-health-endpoint-missing.md`
+
+## [2026-08-06] ingest | Portal PR #48 feat(ci): env-schema validator, CI test job, lint fix | pages touched: 1

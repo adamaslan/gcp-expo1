@@ -58,6 +58,8 @@ agree in intent but not in code.
 > [[concept-sync-requirements]] §1. No feature-domain change; single-source
 > parity nudges down slightly.
 
+> ℹ️ **Portal PR #48 (2026-08-06) assessed — CI/lint infra only (env-schema validator, CI test job, eslint flat-config fix). No feature-domain or shared-code changes. Headline unchanged at ~60%.**
+
 > ⚠️ **Portal PR #46 (2026-07-30) assessed — new portal-only `lib/shared/`
 > module, same pattern as portal PR #40.** Fixed the portal's `/api/brief`:
 > it was calling a nonexistent `/holdfold` endpoint (always 404→null) and
