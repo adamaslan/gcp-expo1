@@ -4,6 +4,122 @@ Append-only chronological record of every wiki operation. See [[SCHEMA#log-forma
 
 ---
 
+## [2026-07-30] ingest | testing + free-tier robustness pages (mirror) | pages touched: 3
+
+Created the mobile counterparts to the portal's two new concept pages.
+
+- `concept-test-strategy.md` — documents an **absence** honestly: this repo has
+  no test framework and no test files (no jest/vitest/testing-library/detox in
+  package.json). What exists is `npm run smoke` (backend reachability, not a
+  test suite) and `npm run gen:types`, which is the de facto contract check —
+  a backend shape change becomes a build-time type error. Argues the first
+  tests should target `lib/subscription.ts`, `lib/retention.ts`,
+  `lib/portfolio.ts` and `lib/shared/*`: pure logic needing no RN runtime, and
+  testing them here turns [[concept-mobile-web-parity]]'s "byte-identical"
+  claims into something *enforced* rather than asserted. Portal PR #45 drifted
+  `subscription.ts` and nothing on this side noticed.
+- `concept-free-tier-resilience.md` — mobile's free tier is a different axis
+  from the portal's: GCP always-free infra, not free model inference. Key
+  framing recorded: **cost scales with cron cadence, not users** (the nightly
+  bake is the budget; 10–100 DAU adds pennies). Carries across the portal's
+  2026-07-30 lesson — enumerate which free-tier limits are per-resource vs.
+  per-account, because redundancy only helps against the former.
+
+Sharpest finding, **verified in code**: [[entity-resilience-layer]]'s policy
+table claims "Retry on 4xx: Never" and states the values were checked against
+the source — but `withRetry`'s default is
+`shouldRetry = (error) => !error.message.includes("validation")`
+(`lib/resilience/network-resilience.ts:22`), which retries every error not
+containing that substring, 4xx and **429** included, up to 3 attempts. Retry is
+right for an outage and harmful for a quota failure: it spends the budget that
+is already exhausted, turning one rejected request into three. Marked as a
+contradiction on `entity-resilience-layer.md` (page vs. code) and recorded as
+hardening item #1 on the new free-tier page. Not fixed — code change, not a
+docs change.
+
+## [2026-07-30] sync | portal PR #46 parity check (mirror) — new lib/shared/holdfold-map.ts, Daily Brief row added | pages touched: 3
+
+Portal fixed `/api/brief` (was calling a nonexistent `/holdfold` endpoint and
+an unscoped, 16.4s `/market-overview` — both always failed silently) by
+extracting a `/signals`→verdict mapper into `lib/shared/holdfold-map.ts`.
+Not adoptable here as-is: our `clients/holdfold.ts` hits a different backend
+with an incompatible verdict schema, so this is a fourth portal-only
+`lib/shared/` file, same share-debt pattern as `signal-policy.ts` /
+`live-price.ts`. Also added a new "Daily Brief / Market Briefing" matrix row
+(🔴 Divergent) — our `BriefingScreen` was never tracked despite being the
+mobile analogue of portal's `/api/brief`, just architecturally different
+(full council prompt vs. one-shot structured completion). Flagged our own
+`getMarketOverview()` as carrying the same unscoped-fetch cost portal just
+fixed — worth profiling whether we actually need `history`. Headline
+~61%→~60% (single-source ~37%→~36%; feature-domain ~82% unchanged).
+
+## [2026-07-27] sync | portal PR #45 parity check (mirror) — `lib/subscription.ts` newly drifted | pages touched: 3
+
+Mirror of the portal-side check after nuwrrrld-portal PR #45 — a Stripe
+checkout production incident fix (`nuwrrrld-portal/docs/wiki-portal/incident-2026-07-27-stripe-checkout-invalid-header.md`):
+a malformed `STRIPE_SECRET_KEY` threw an unhandled `ERR_INVALID_CHAR` inside
+`stripe.checkout.sessions.create`, plus Clerk was found serving a dev-instance
+key (`pk_test_...`) on the production domain. Fix added defensive try/catch on
+the Stripe SDK calls, `/api/health` checks for both misconfig classes, and —
+the piece that matters for this wiki — a new `parseSubscriptionMetadata()` in
+`lib/subscription.ts` **on the portal side only**. Confirmed via `diff`
+against this repo's `lib/subscription.ts` that the two files were
+byte-identical before that change; this is new, real drift in a module the
+parity matrix previously counted as one of only four fully-synced shared
+modules. Single-source parity ~38%→~37%, blended ~62%→~61%. Updated
+`concept-mobile-web-parity.md` (assessment note + matrix row downgraded to
+🟡 Partial) and `concept-sync-requirements.md` (new #1-priority de-drift row:
+port `parseSubscriptionMetadata()` here verbatim). Full portal-side ingest —
+new `entity-billing.md` and the incident page — lives in
+`nuwrrrld-portal/docs/wiki-portal/`, referenced by path per this wiki's
+cross-repo convention, not duplicated here.
+
+---
+
+## [2026-07-24] sync | portal PR #43 parity check (mirror) — +1 matrix row | pages touched: 3
+
+Mirror of the portal-side check after nuwrrrld-portal PR #43 (landing Phase
+3+4: sticky scrollytelling council demo, RISK-seat spotlight, "how it works"
+section, plus a no-login public council demo, OG verdict share cards, and
+public verdict pages). Reuses the existing portal-only `lib/openrouter.ts` AI
+Council stack — no `lib/shared/` file touched — so single-source parity is
+unchanged. Added one matrix row ("Public council demo + share cards",
+portal-only) since it's a real AI-Council-adjacent surface worth tracking.
+Updated `concept-mobile-web-parity.md` and `concept-sync-requirements.md`
+(noted as a pattern to copy if mobile ever wants an app-store teaser). Portal
+mirror: `nuwrrrld-portal/docs/wiki-portal/`.
+
+---
+
+## [2026-07-24] sync | portal PR #42 parity check (mirror) — no change | pages touched: 3
+
+Mirror of the portal-side check after nuwrrrld-portal PR #42 (signed-out
+landing-page revamp: plain-language copy, brand-token alignment onto the neon
+palette, a fixed market-data shape bug, and Framer Motion/Lenis/parallax
+polish). Touches no `lib/shared/` module and no cross-surface business logic —
+it's the portal's public marketing surface, which this app has no direct
+analog for (nearest equivalent, `OnboardingScreen`, already tracked as
+mobile-only). Headline (~62%) and matrix left unchanged; added a dated
+assessment note to `concept-mobile-web-parity.md` and updated the Onboarding
+row in `concept-sync-requirements.md`. Portal mirror:
+`nuwrrrld-portal/docs/wiki-portal/`.
+
+---
+
+## [2026-07-24] sync | portal PR #40 parity recompute (mirror) | pages touched: 3
+
+Mirror of the portal-side sync after nuwrrrld-portal PR #40 (real-time signal
+tier: pending_signals queue, read-through signal_cache, Finnhub WS live-price
+lane). Headline dropped ~65% → **~62%** — feature-domain parity held (~82%) but
+single-source parity fell ~44% → ~38% because the portal added several
+signal-plane modules with no mobile counterpart, two of them
+(`lib/shared/signal-policy.ts`, `lib/shared/live-price.ts`) inside the
+supposedly-shared folder. Updated `concept-mobile-web-parity.md` (headline +
+matrix), `concept-sync-requirements.md` (new adopt-before-drift + port rows),
+and `index.md`. Portal mirror: `nuwrrrld-portal/docs/wiki-portal/`.
+
+---
+
 ## [2026-05-22] init | initial wiki creation | pages created: 13
 
 Initial scaffolding of `docs/wiki-mobile/` following the pattern from `gcp3/docs/wiki-gcp3/`. Pages created:
@@ -114,3 +230,37 @@ PR #27 replaced the indigo-based dark palette in `lib/ui/theme.ts` with the port
 **Pages updated (2):**
 - `index.md` — added new decision under Active Decisions
 - `log.md` — this entry
+
+## [2026-07-21] ingest | PR #28 Prompt chips, signals workbench, watchlist screen, haptics, skeletons | pages touched: 4
+
+PR #28 closed most of the mobile Phase B/C catch-up items from `homebase/interactivity-15.md`: Nu AI prompt chips + a watchlist-context chip, `lib/shared/signalFilters.ts` + search/filter/sort on DigestScreen (persisted via new `lib/shared/prefs.ts`), `expo-haptics` across HoldFold/Digest/NuAI taps, a new Portfolio tab wiring the previously-unused `usePortfolio` hook, and skeleton loading placeholders in `StateView`. Companion portal-side PR (adamaslan/nuwrrrld-portal#39) added ticker-mention grounding to Nu AI's system prompt and extracted the matching `signalFilters.ts`/`prompts.ts` there.
+
+**Pages created (1):**
+- `entity-portfolio.md` — new entity; documents `usePortfolio`/`portfolio.ts` getting a real UI consumer for the first time, plus the same-day portal env-var incident that broke its health score data source
+
+**Pages updated (3):**
+- `entity-nuai.md` — `lib/sse.ts` relocation to `lib/shared/`, prompt chips, watchlist-context chip, portal-side ticker grounding
+- `entity-signals-digest.md` — new `lib/shared/signalFilters.ts` + `lib/shared/prefs.ts`, DigestScreen search/filter/sort
+- `index.md` — added `entity-portfolio`, updated `entity-nuai` line, bumped last-updated date
+
+## [2026-07-24] sync | cross-surface parity analysis | pages touched: 4 (concept-mobile-web-parity, concept-sync-requirements, index; portal mirror)
+
+## [2026-07-26] cross-repo | Portfolio health endpoint never implemented | pages touched: 2 (entity-portfolio, log)
+
+The portal-side investigation into "Health score unavailable" found the root
+cause is not env-var corruption (the 2026-07-21 fix recorded on
+`entity-portfolio`) but a **missing gcp3 route** — `/api/portfolio/health` was
+never registered; `portfolio_analyzer.py` is orphaned. Mobile's Portfolio tab is
+broken by the same route via `usePortfolio()`.
+
+Recorded on `entity-portfolio` that the env-var fix moved the failure from 503
+to 502 while rendering the *same* user-facing string, which is why the real
+cause stayed hidden — flagged explicitly so this isn't re-diagnosed as an env
+problem. Also noted mobile inherits the portal↔gcp3 contract drift: a missing
+`score` coerces to `0`, which would show **Grade F for every user** on this
+screen once the route lands.
+
+Full write-up:
+`nuwrrrld-portal/docs/wiki-portal/incident-2026-07-26-portfolio-health-endpoint-missing.md`
+
+## [2026-08-06] ingest | Portal PR #48 feat(ci): env-schema validator, CI test job, lint fix | pages touched: 1

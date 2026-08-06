@@ -27,9 +27,18 @@ collapsed headline, expandable explanation. Uses `lib/signalCard.ts`'s
 `buildSignalCard` / `formatSignalForShare` helpers (share-sheet integration,
 see [[entity-retention]]).
 
+PR #28 added `lib/shared/signalFilters.ts` (`filterSignals`, `sortSignals`,
+`CONFIDENCE_RANK`) — a byte-for-byte mirror of `nuwrrrld-portal`'s
+`lib/shared/signalFilters.ts`, both extracted the same day from their
+respective client components with no behavior change. `DigestScreen.tsx` now
+has search + bullish/bearish/neutral direction filter + confidence/ticker
+sort, persisted across sessions via a new `lib/shared/prefs.ts`
+(expo-secure-store; portal's counterpart uses `localStorage` behind the same
+`getPref`/`setPref` signature).
+
 ## Where used
 
-- Signals tab / dashboard digest view.
+- Signals tab / dashboard digest view (`screens/DigestScreen.tsx`).
 - Share flow — a signal card can be shared as formatted text via
   `formatSignalForShare` → [[entity-retention]]'s `shareSheet.ts`.
 
