@@ -44,6 +44,26 @@ haptic feedback on outcome yet, only on the tap itself — see open questions).
   `incident-*.md` if it recurs, since a bad env var like this fails
   silently (503, not a build error) and only surfaces as a user-facing
   message.
+- **The health endpoint itself was never implemented (found 2026-07-26)** —
+  `usePortfolio()` fetches the portal's `/api/portfolio/health`, which
+  proxies to `{MCP_BACKEND_URL}/api/portfolio/health` on gcp3. **That gcp3
+  route does not exist** and never has; the analysis logic sits orphaned in
+  `portfolio_analyzer.py`, unregistered. So the Portfolio tab's headline
+  score is dead on mobile for the same reason it's dead on web. Full
+  write-up:
+  `nuwrrrld-portal/docs/wiki-portal/incident-2026-07-26-portfolio-health-endpoint-missing.md`.
+
+  **This supersedes the diagnosis above, and the two are easy to confuse.**
+  Repairing the corrupted env var moved the failure from *fetch throws*
+  (503) to *404 from gcp3* (502) — and the client renders both with the
+  identical "Health score unavailable" string. The env-var fix was real but
+  the symptom never changed, which is precisely why the deeper cause stayed
+  hidden for five days. **Do not re-diagnose this as an env-var problem.**
+
+  Cross-surface note: even once the route lands, mobile inherits the portal's
+  contract drift — gcp3 emits `ai_grade`/`ai_*` while `lib/portfolio.ts`
+  expects `score`/`factors[]`/`summary`, and a missing score coerces to `0`,
+  which would render **Grade F for every user** on this screen.
 
 ## Open questions
 
