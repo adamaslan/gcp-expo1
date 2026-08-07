@@ -62,6 +62,8 @@ agree in intent but not in code.
 
 > ✅ **Our PR #29 (2026-08-07) — de-drifts `lib/subscription.ts`, first item of [[concept-sync-requirements]] §1.** Ported `parseSubscriptionMetadata()` verbatim from the portal's copy, closing the drift portal PR #45 introduced. Confirmed byte-identical by diff post-port. Single-surface PR on our side only — portal already had this code, so no portal PR was needed for this item.
 
+> ✅ **Portal PR #50 (2026-08-07) — de-drifts `lib/shared/signalFilters.ts` and confirms `lib/shared/prefs.ts`, item #2 of [[concept-sync-requirements]] §1.** Their `signalFilters.ts` had drifted by quote style only; standardized on our single-quote convention, leaving only the necessary import-path seam (our `@/` alias is unconfigured — a separate, pre-existing bug, not sync-batch scope). `prefs.ts` was assessed and confirmed to differ *only* on the intended localStorage/SecureStore storage-backend seam — reclassified to ✅ Aligned rather than edited, since byte-identity there would break the platform split by design. Single-surface fix on their side only — we needed no change.
+
 > ⚠️ **Portal PR #46 (2026-07-30) assessed — new portal-only `lib/shared/`
 > module, same pattern as portal PR #40.** Fixed the portal's `/api/brief`:
 > it was calling a nonexistent `/holdfold` endpoint (always 404→null) and
@@ -90,7 +92,7 @@ agree in intent but not in code.
 > skipping `history`) is worth profiling — see
 > [[concept-sync-requirements]] §2.
 
-## Headline: ~61% synced (2026-08-07, after our PR #29)
+## Headline: ~62% synced (2026-08-07, after portal PR #50)
 
 Two different denominators, deliberately kept separate:
 
@@ -98,9 +100,11 @@ Two different denominators, deliberately kept separate:
   work on both surfaces; only the AI Council is architecturally divergent, and
   two domains (Signals/Digest, Nu AI) have drifted implementations. Unchanged by
   portal PR #40 (which added depth, not a new shared domain).
-- **Single-source (code-identical) parity ≈ 37%** (was ~36%) — our PR #29
+- **Single-source (code-identical) parity ≈ 39%** (was ~37%) — our PR #29
   ported `parseSubscriptionMetadata()` into `lib/subscription.ts`, restoring
-  that module to byte-identical and clawing back the point portal PR #45 cost.
+  that module to byte-identical. Portal PR #50 reconciled `signalFilters.ts`'s
+  quote-style drift and confirmed `prefs.ts`'s remaining difference is an
+  intentional storage-backend seam, not drift — both now count as synced.
   Still owed: portal PR #40 added a whole portal-only real-time signal tier
   (`signal-queue`, `signal-policy`, read-through `signal_cache`, `live-price` +
   `live-price-db`, `/api/signals/drain` + `/live`) with **no mobile
@@ -111,12 +115,11 @@ Two different denominators, deliberately kept separate:
   (`holdfold-map.ts`) — not adoptable here without first unifying our Hold/Fold
   backend and verdict schema with the portal's.
 
-The blended **~61%** (up from ~60%) reflects the first completed item of a
-`/sync-pr` de-drift batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`)
-— `prefs.ts`/`signalFilters.ts` and `digest.ts`/`signalCard.ts` are next in
-that batch's queue. The portal still pulls ahead on the signal/Hold-Fold data
-plane independent of this batch; the risk lives in the gap between the two
-denominators.
+The blended **~62%** (up from ~61%) reflects the first two completed items of
+a `/sync-pr` de-drift batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`)
+— `digest.ts`/`signalCard.ts` is next in that batch's queue. The portal still
+pulls ahead on the signal/Hold-Fold data plane independent of this batch; the
+risk lives in the gap between the two denominators.
 
 ## Domain parity matrix
 
@@ -131,8 +134,8 @@ denominators.
 | **Nu AI chat** | `nuai.ts`, `NuAIScreen`, `useNuAI` ([[entity-nuai]]) | `nuai.ts`, `/api/nuai`, `dashboard/nuai` | `nuai.ts` **diverged** | 🟡 Partial |
 | **Hold/Fold** | `clients/holdfold.ts`, `HoldFoldScreen` — different backend, incompatible verdict shape | `/api/holdfold`, `dashboard/holdfold`, holdfold-cache, `/api/brief` (portal PR #46) | `lib/shared/holdfold-map.ts` in portal's `lib/shared/` but portal-only (PR #46) | 🟡 Partial — portal caches + has a shared mapper; mobile calls a different backend live |
 | **Daily Brief / Market Briefing** | `BriefingScreen` — live council prompt from `getMarketOverview()` + `getMacroPulse()` + `getSignals()` | `/api/brief` — one-shot LLM completion grounded on scoped market data + Hold/Fold verdicts (portal PR #46) | none | 🔴 Divergent — different data (mobile: full sections + macro; portal: brief-only + verdicts), different output shape (council prose vs. 4-sentence structured brief) |
-| **Shared prefs** | `shared/prefs.ts` | `shared/prefs.ts` | **diverged** | 🟡 Partial |
-| **Shared signal filters** | `shared/signalFilters.ts` | `shared/signalFilters.ts` | **diverged** | 🟡 Partial |
+| **Shared prefs** | `shared/prefs.ts` (SecureStore) | `shared/prefs.ts` (localStorage) | **byte-identical except the storage-backend seam** (confirmed, portal PR #50 assessment) | ✅ Aligned — same seam class as Auth SDK |
+| **Shared signal filters** | `shared/signalFilters.ts` (canonical) | `shared/signalFilters.ts` (portal PR #50) | **byte-identical except the import-path seam** (our `@/` alias is unconfigured — separate bug) | ✅ Synced — was 🟡 Partial (quote-style drift), reconciled by portal PR #50 |
 | **Feedback** | `feedback.ts` | `/api/feedback` | none | 🟡 Present both, unshared |
 | **Push** | `pushNotifications.ts` | `/api/push` | none | 🟡 Present both, unshared |
 | **Referral / share** | `shareSheet.ts` | `/api/referral`, `dashboard/share` | none | 🟡 Present both, unshared |
