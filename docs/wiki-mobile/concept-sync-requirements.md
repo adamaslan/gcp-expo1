@@ -34,7 +34,7 @@ subtree, or the `nuwrrrld-fullstack` skill's single-sourcing workflow). This is
 
 | Module | What's needed |
 |--------|---------------|
-| `lib/subscription.ts` | New (portal PR #45), portal-only. Was byte-identical with mobile until this PR added `parseSubscriptionMetadata()` (validates `publicMetadata.subscription_status` against the known enum, degrades to `free` on malformed data) to the portal copy only. Lowest-effort de-drift on this whole list — port the same function verbatim here to restore identical status. See [[entity-billing]] and `nuwrrrld-portal/docs/wiki-portal/incident-2026-07-27-stripe-checkout-invalid-header.md`. |
+| ~~`lib/subscription.ts`~~ | **Done — our PR #29 (2026-08-07).** Ported `parseSubscriptionMetadata()` verbatim from the portal copy; confirmed byte-identical by diff. See [[entity-billing]] and `nuwrrrld-portal/docs/wiki-portal/incident-2026-07-27-stripe-checkout-invalid-header.md`. |
 | `lib/shared/prefs.ts` | Diff the two copies; reconcile to one. Already lives in `shared/` on both sides, so it should be the *easiest* to fix and is the most embarrassing to leave drifted. |
 | `lib/shared/signalFilters.ts` | Reconcile filter predicates so a "watchlist"/"muted" filter means the same thing on both surfaces. |
 | `lib/shared/signal-policy.ts` | New on the portal (PR #40), mobile-absent. Pure ticker validation / cache-freshness / backoff. **Adopt before mobile writes its own**, so it never drifts to begin with. |
@@ -98,8 +98,8 @@ parity" is undefined and should not be counted for or against the sync %.
 
 ## Priority order (highest ROI first)
 
-1. `lib/subscription.ts` de-drift — port `parseSubscriptionMetadata()` from the portal; one function, restores a previously-solved module to identical (portal PR #45 regression).
-2. `lib/shared/prefs.ts` + `signalFilters.ts` de-drift — already in `shared/`, low effort, high symbolic value.
+1. ~~`lib/subscription.ts` de-drift~~ — **done, our PR #29 (2026-08-07)**.
+2. `lib/shared/prefs.ts` + `signalFilters.ts` de-drift — already in `shared/`, low effort, high symbolic value. **Next up** in the `/sync-pr` batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`).
 3. `digest.ts` + `signalCard.ts` de-drift — resolves standing open-issue #6.
 4. Add a drift-detection CI gate so `lib/shared/` can't silently diverge again.
 5. Record the AI Council convergence decision.

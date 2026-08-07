@@ -60,6 +60,8 @@ agree in intent but not in code.
 
 > ℹ️ **Portal PR #48 (2026-08-06) assessed — CI/lint infra only (env-schema validator, CI test job, eslint flat-config fix). No feature-domain or shared-code changes. Headline unchanged at ~60%.**
 
+> ✅ **Our PR #29 (2026-08-07) — de-drifts `lib/subscription.ts`, first item of [[concept-sync-requirements]] §1.** Ported `parseSubscriptionMetadata()` verbatim from the portal's copy, closing the drift portal PR #45 introduced. Confirmed byte-identical by diff post-port. Single-surface PR on our side only — portal already had this code, so no portal PR was needed for this item.
+
 > ⚠️ **Portal PR #46 (2026-07-30) assessed — new portal-only `lib/shared/`
 > module, same pattern as portal PR #40.** Fixed the portal's `/api/brief`:
 > it was calling a nonexistent `/holdfold` endpoint (always 404→null) and
@@ -88,7 +90,7 @@ agree in intent but not in code.
 > skipping `history`) is worth profiling — see
 > [[concept-sync-requirements]] §2.
 
-## Headline: ~60% synced (2026-07-30, after portal PR #46)
+## Headline: ~61% synced (2026-08-07, after our PR #29)
 
 Two different denominators, deliberately kept separate:
 
@@ -96,32 +98,32 @@ Two different denominators, deliberately kept separate:
   work on both surfaces; only the AI Council is architecturally divergent, and
   two domains (Signals/Digest, Nu AI) have drifted implementations. Unchanged by
   portal PR #40 (which added depth, not a new shared domain).
-- **Single-source (code-identical) parity ≈ 36%** (was ~37%) — portal PR #40
-  added a whole portal-only real-time signal tier (`signal-queue`,
-  `signal-policy`, read-through `signal_cache`, `live-price` + `live-price-db`,
-  `/api/signals/drain` + `/live`) with **no mobile counterpart**. Two of those
-  modules (`lib/shared/signal-policy.ts`, `lib/shared/live-price.ts`) sit in the
-  supposedly-shared `lib/shared/` folder yet exist only on the portal — new
-  share-debt the mobile app should claim before writing its own copies. Portal
-  PR #45 shaved a further point off: `lib/subscription.ts`, previously one of
-  only four truly identical modules, now carries a portal-only
-  `parseSubscriptionMetadata()`. Portal PR #46 adds a fourth portal-only file
-  to `lib/shared/` (`holdfold-map.ts`) — not adoptable here without first
-  unifying our Hold/Fold backend and verdict schema with the portal's.
+- **Single-source (code-identical) parity ≈ 37%** (was ~36%) — our PR #29
+  ported `parseSubscriptionMetadata()` into `lib/subscription.ts`, restoring
+  that module to byte-identical and clawing back the point portal PR #45 cost.
+  Still owed: portal PR #40 added a whole portal-only real-time signal tier
+  (`signal-queue`, `signal-policy`, read-through `signal_cache`, `live-price` +
+  `live-price-db`, `/api/signals/drain` + `/live`) with **no mobile
+  counterpart**. Two of those modules (`lib/shared/signal-policy.ts`,
+  `lib/shared/live-price.ts`) sit in the supposedly-shared `lib/shared/` folder
+  yet exist only on the portal — share-debt we should claim before writing our
+  own copies. Portal PR #46 adds a fourth portal-only file to `lib/shared/`
+  (`holdfold-map.ts`) — not adoptable here without first unifying our Hold/Fold
+  backend and verdict schema with the portal's.
 
-The blended **~60%** (down from ~61%) reflects the portal continuing to pull
-ahead on the signal/Hold-Fold data plane while `lib/shared/` keeps
-accumulating portal-only files — the product still *looks* synced to a user,
-but the code gap widens with each portal PR that adds to `lib/shared/`
-without a mobile counterpart. The risk lives in the gap between those two
-numbers.
+The blended **~61%** (up from ~60%) reflects the first completed item of a
+`/sync-pr` de-drift batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`)
+— `prefs.ts`/`signalFilters.ts` and `digest.ts`/`signalCard.ts` are next in
+that batch's queue. The portal still pulls ahead on the signal/Hold-Fold data
+plane independent of this batch; the risk lives in the gap between the two
+denominators.
 
 ## Domain parity matrix
 
 | Domain | Mobile | Portal | Shared module | Status |
 |--------|--------|--------|---------------|--------|
 | **Auth (Clerk)** | `@clerk/clerk-expo` ([[entity-clerk-expo]]) | `@clerk/nextjs` | — (SDK differs by design) | ✅ Aligned — same provider + entitlement key |
-| **Subscription/billing** | `subscription.ts`, `PaywallScreen`, `useSubscription` ([[entity-billing]]) | `subscription.ts`, `stripe.ts`, `dashboard/billing` | `lib/subscription.ts` **diverged (portal PR #45)** — mobile lacks `parseSubscriptionMetadata()` | 🟡 Partial — was ✅ Synced until portal PR #45 |
+| **Subscription/billing** | `subscription.ts`, `PaywallScreen`, `useSubscription` ([[entity-billing]]) | `subscription.ts`, `stripe.ts`, `dashboard/billing` | `lib/subscription.ts` **byte-identical (our PR #29)** | ✅ Synced — re-synced after portal PR #45 drift |
 | **Retention** | `retention.ts`, `useStreak`, `TrialExpiryBanner` ([[entity-retention]]) | `retention.ts`, `/api/retention` | `lib/retention.ts` **identical** | ✅ Synced |
 | **Portfolio** | `portfolio.ts`, `PortfolioScreen`, `usePortfolio` ([[entity-portfolio]]) | `portfolio.ts`, `/api/portfolio`, `dashboard/portfolio` | `lib/portfolio.ts` **identical** | ✅ Synced |
 | **SSE transport** | `shared/sse.ts` | `shared/sse.ts` | **identical** | ✅ Synced |
