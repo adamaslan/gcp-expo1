@@ -37,7 +37,7 @@ Anything else (including unset) is "real mode" — Clerk env vars are required.
 
 ## Known failures
 
-None recorded — but the failure mode to watch is **silent demo activation in production**. If `EXPO_PUBLIC_DEMO_MODE=true` slips into an EAS build, real users see the mock user without any indication. There is no runtime warning today. See [[../docs/PHASE2_STATUS.md]] for context on how it's intended to behave.
+None recorded — but the failure mode to watch is **silent demo activation in production**. If `EXPO_PUBLIC_DEMO_MODE=true` slips into an EAS build, real users see the mock user without any indication. There is no runtime warning today. See [[../PHASE2_STATUS.md]] for context on how it's intended to behave.
 
 > ❓ Open question: Does the EAS Build profile for `production` explicitly set `EXPO_PUBLIC_DEMO_MODE=false`? If unset, the dev default carries over.
 

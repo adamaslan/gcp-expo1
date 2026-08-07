@@ -29,7 +29,7 @@ It is intentionally not a generic library. It encodes the mobile app's policy ch
 
 | Concern | Setting |
 |---------|---------|
-| Retry on 4xx | Never |
+| Retry on 4xx | **Intended: never. Actual: yes** — see contradiction below |
 | Retry on 5xx | Yes, up to 3 attempts |
 | Retry on network error | Yes, up to 3 attempts |
 | Backoff base | 500ms |
@@ -43,7 +43,25 @@ It is intentionally not a generic library. It encodes the mobile app's policy ch
 
 ## Known failures
 
-None recorded yet — resilience landed in Phase 4–5 but the integration with [[entity-backend-client]] is partial. Failures will surface once real backend traffic is flowing in production.
+> ⚠️ Contradiction (found 2026-07-30): this page says **"Retry on 4xx: Never"**
+> and claims the values were verified against the source. The code does not do
+> that. `withRetry`'s default predicate is
+> `shouldRetry = (error) => !error.message.includes("validation")` —
+> i.e. it retries **every** error whose message doesn't happen to contain the
+> string "validation", including 4xx, and including **429**. Callers that don't
+> pass an explicit `shouldRetry` get up to 3 attempts against a rate-limited or
+> quota-exhausted backend.
+>
+> This matters beyond correctness: retrying a quota error *consumes the budget
+> that is already exhausted*, converting one rejected request into three. See
+> [[concept-free-tier-resilience]] — the portal hit exactly this class of
+> failure on 2026-07-30 with an account-wide daily cap.
+>
+> Fix direction: make the default predicate opt-*in* to retry (network errors
+> and 5xx only) rather than opt-out by substring match, and treat 429 as
+> terminal unless a `Retry-After` says otherwise.
+
+Beyond the above, no runtime failures recorded — resilience landed in Phase 4–5 but the integration with [[entity-backend-client]] is partial. Failures will surface once real backend traffic is flowing in production.
 
 ## Open questions
 

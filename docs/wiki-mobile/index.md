@@ -1,6 +1,6 @@
 # Wiki Index — gcp3-mobile
 
-_Last updated: 2026-07-02 (post-PR-#12..#24 sync)_
+_Last updated: 2026-08-07 (our PR #29 + portal PR #50 — subscription.ts/signalFilters.ts/prefs.ts de-drift batch; parity headline ~60%→~62%)_
 
 Catalog is organized by page type. Read `index.md` first on any query to find relevant pages, then drill in. For the philosophy behind this wiki pattern, see [[ORIGIN]].
 
@@ -36,7 +36,8 @@ One page per named system component. These are the hubs.
 - [[entity-billing]] — subscription status, Settings tab, authenticated checkout (PR #14, #21, #22)
 - [[entity-retention]] — streak, push opt-in, share sheet, trial banner (PR #19, #20)
 - [[entity-signals-digest]] — schema-versioned digest + `adaptLiveSignals` + `SignalDigestCard` (PR #16)
-- [[entity-nuai]] — chat contract, guardrails, SSE streaming fix (PR #16, #24)
+- [[entity-nuai]] — chat contract, guardrails, SSE streaming fix, prompt chips + ticker grounding (PR #16, #24, #28)
+- [[entity-portfolio]] — health score + watchlist; first real UI consumer of `usePortfolio` (PR #28)
 
 ---
 
@@ -45,7 +46,11 @@ One page per named system component. These are the hubs.
 Cross-cutting patterns and design philosophy.
 
 - [[concept-council-tap-in]] — LLM calls never auto-fire; user must tap (Rule 4 of the $5/mo cost guard)
+- [[concept-test-strategy]] — documents an absence: no test framework exists; what to build first and why
+- [[concept-free-tier-resilience]] — GCP infra free tiers (cost scales with cron, not users) and quota-vs-outage failure
 - [[concept-backend-is-source-of-truth]] — generate types from backend OpenAPI; never hand-mirror
+- [[concept-mobile-web-parity]] — how synced this app and the web portal are (~62%, 2026-08-07 after our PR #29 + portal PR #50) + full parity matrix
+- [[concept-sync-requirements]] — what each surface needs to reach parity (de-drift, port, converge)
 - [[concept-archive-not-delete]] — when docs/code go obsolete, move to archive, never `rm`
 - ~~[[concept-single-backend-assumption]]~~ — **resolved 2026-05-23** by PR #5; kept for historical context
 
