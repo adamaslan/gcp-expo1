@@ -265,3 +265,5 @@ Full write-up:
 
 ## [2026-08-06] ingest | Portal PR #48 feat(ci): env-schema validator, CI test job, lint fix | pages touched: 1
 ## [2026-08-07] ingest | Our PR #29 fix(subscription): port parseSubscriptionMetadata() — single-surface de-drift, headline ~60%→~61% | pages touched: 3
+## [2026-08-07] ingest | Portal PR #50 fix(shared): reconcile signalFilters.ts/prefs.ts with us — single-surface de-drift, headline ~61%→~62% | pages touched: 4
+## [2026-08-07] ingest | Our PR #30 + portal PR #51 fix(shared): reconcile digest.ts/signalCard.ts — dual-surface de-drift + ticker-precedence bugfix, resolves open-issue #6, headline ~62%→~64% | pages touched: 4

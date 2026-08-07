@@ -40,8 +40,8 @@ subtree, or the `nuwrrrld-fullstack` skill's single-sourcing workflow). This is
 | `lib/shared/signal-policy.ts` | New on the portal (PR #40), mobile-absent. Pure ticker validation / cache-freshness / backoff. **Adopt before mobile writes its own**, so it never drifts to begin with. |
 | `lib/shared/live-price.ts` | New on the portal (PR #40), mobile-absent. Pure live-price parse/validate; share if mobile consumes `/api/signals/live`. |
 | `lib/shared/holdfold-map.ts` | New on the portal (PR #46), mobile-absent. Pure `/signals`→verdict mapper. **Not a drop-in adopt** — our `clients/holdfold.ts` targets a different backend (`EXPO_PUBLIC_HOLDFOLD_BACKEND_URL`) with a different verdict schema entirely (`symbol`/`risk_level`/`volatility_regime`/`atr` vs. this module's `ticker`/`confidenceLabel`/`bias`/`adx`). Adopting it means switching our Hold/Fold backend first, not just importing a file. |
-| `lib/digest.ts` | Resolve the `adaptLiveSignals` error-handling split (throw vs. null) and field mappings flagged in [[overview#open-issues|open-issue #6]] and [[entity-signals-digest#open-questions]]. Pick one adapter; move it to `lib/shared/`. |
-| `lib/signalCard.ts` | Reconcile card-shape derivation so a signal renders identically. Move to `lib/shared/`. |
+| ~~`lib/digest.ts`~~ | **Logic done — our PR #30 + portal PR #51 (2026-08-07).** Fixed a real ticker-precedence bug in portal's copy (contradicted its own comment); ported portal's `dataQualityScore` here. Both copies confirmed byte-identical. Still open: physically moving the file into `lib/shared/` — a bigger, lower-priority restructuring, not required for parity. Resolves [[overview#open-issues\|open-issue #6]] and [[entity-signals-digest#open-questions]]. |
+| ~~`lib/signalCard.ts`~~ | **Logic done — same PRs.** We adopted portal's `_baseAppUrl` unused-param convention; portal adopted our `encodeURIComponent(signal.id)`. Move to `lib/shared/` still open, same as `digest.ts`. |
 | `lib/nuai.ts` | Reconcile chat contract (token budget, refusal guardrails, prompt-chip grounding — see [[entity-nuai]]). Ensure request/response types match the portal `/api/nuai`. |
 
 **Definition of done:** each file exists once in `lib/shared/`, is byte-identical
@@ -99,9 +99,9 @@ parity" is undefined and should not be counted for or against the sync %.
 ## Priority order (highest ROI first)
 
 1. ~~`lib/subscription.ts` de-drift~~ — **done, our PR #29 (2026-08-07)**.
-2. `lib/shared/prefs.ts` + `signalFilters.ts` de-drift — already in `shared/`, low effort, high symbolic value. **Next up** in the `/sync-pr` batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`).
-3. `digest.ts` + `signalCard.ts` de-drift — resolves standing open-issue #6.
-4. Add a drift-detection CI gate so `lib/shared/` can't silently diverge again.
+2. ~~`lib/shared/prefs.ts` + `signalFilters.ts` de-drift~~ — **done, portal PR #50 (2026-08-07)**.
+3. ~~`digest.ts` + `signalCard.ts` de-drift~~ — **done, our PR #30 + portal PR #51 (2026-08-07)**. Resolved standing open-issue #6.
+4. Add a drift-detection CI gate so `lib/shared/` can't silently diverge again. **Next up** in the `/sync-pr` batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`).
 5. Record the AI Council convergence decision.
 6. Port observability (analytics/Sentry) to portal; port backtest to mobile (or decide against).
 
