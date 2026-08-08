@@ -60,6 +60,8 @@ export default function PortfolioScreen() {
           </View>
           <Text style={styles.healthSummary}>{health.summary}</Text>
         </View>
+      ) : watchlist.length === 0 ? (
+        <Text style={styles.noHealth}>Add tickers to your watchlist to get your health score.</Text>
       ) : (
         <Text style={styles.noHealth}>Health score unavailable — try again shortly.</Text>
       )}

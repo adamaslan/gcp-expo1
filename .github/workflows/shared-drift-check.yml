@@ -1,0 +1,38 @@
+name: Shared-core drift check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  shared-drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout mobile (this repo)
+        uses: actions/checkout@v4
+        with:
+          path: gcp3-mobile
+          persist-credentials: false
+
+      - name: Checkout web
+        uses: actions/checkout@v4
+        with:
+          repository: adamaslan/nuwrrrld-portal
+          path: nuwrrrld-portal
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check shared-core drift
+        working-directory: gcp3-mobile
+        env:
+          WEB_ROOT: ../nuwrrrld-portal
+          MOBILE_ROOT: .
+        run: node scripts/check-shared-drift.mjs
