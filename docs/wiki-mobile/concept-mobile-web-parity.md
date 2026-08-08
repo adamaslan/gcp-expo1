@@ -94,6 +94,8 @@ agree in intent but not in code.
 > skipping `history`) is worth profiling — see
 > [[concept-sync-requirements]] §2.
 
+> ℹ️ **Our PR #32 (2026-08-08) assessed — tsc baseline fix only. No feature-domain or shared-code changes. Headline unchanged at ~64%.** Resolved all 38 pre-existing `npx tsc --noEmit` errors on this repo's baseline: missing `@/*` path alias in tsconfig.json, `@vercel/node` types on `api/*.ts` (these are Vercel functions, not Next.js), missing `expo-notifications`/`svix` dependencies, deleted three dead components importing a nonexistent `../backend/schemas/signal` module, plus real type-safety fixes in `lib/api.ts` (generic `getMarketData<T>()`) and `lib/auth-provider.tsx` (`isSignedIn` undefined→null coercion). None of the touched files live in `lib/shared/`; same infra-only class as portal PR #48.
+
 ## Headline: ~64% synced (2026-08-07, after our PR #30 + portal PR #51)
 
 Two different denominators, deliberately kept separate:
