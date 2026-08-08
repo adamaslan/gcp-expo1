@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 type MetricEvent = {
   name: string;
@@ -9,8 +9,8 @@ type MetricEvent = {
 };
 
 export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
+  req: VercelRequest,
+  res: VercelResponse
 ) {
   if (req.method === "POST") {
     const metric: MetricEvent = req.body;

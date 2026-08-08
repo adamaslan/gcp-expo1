@@ -104,7 +104,7 @@ export default function SignInScreen() {
       await withRetry(
         async () => {
           const result = await signIn.create({ identifier: state.email, password: state.password });
-          if (result.status === 'complete') {
+          if (result.status === 'complete' && result.createdSessionId) {
             await setActive({ session: result.createdSessionId });
             await cacheSession(result.createdSessionId);
             authLogger.info('signin_success', 'Sign-in successful', { email: state.email });

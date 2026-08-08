@@ -94,6 +94,8 @@ agree in intent but not in code.
 > skipping `history`) is worth profiling — see
 > [[concept-sync-requirements]] §2.
 
+> ℹ️ **Our PR #32 (2026-08-08) assessed — tsc baseline fix, one bundled shared-drift fix. Headline unchanged at ~64%.** Resolved all 38 pre-existing `npx tsc --noEmit` errors on this repo's baseline: missing `@/*` path alias in tsconfig.json, `@vercel/node` types on `api/*.ts` (these are Vercel functions, not Next.js), missing `expo-notifications`/`svix` dependencies, deleted three dead components importing a nonexistent `../backend/schemas/signal` module, plus real type-safety fixes in `lib/api.ts` (generic `getMarketData<T>()`) and `lib/auth-provider.tsx` (`isSignedIn` undefined→null coercion) — same infra-only class as portal PR #48. Also bundled a portal PR #52 CodeRabbit-review fix ported here to `lib/digest.ts`: `symbolKey || entry.symbol` never fell back to `entry.symbol` for whitespace-only keys because `symbolKey` (an object key) is always truthy — now trimmed first. Confirmed byte-identical with the portal's copy post-fix; `scripts/check-shared-drift.mjs` passes. Not a parity-percentage move (bugfix keeping an already-✅-Synced file in sync), but worth noting since it's a real correctness fix, not just formatting.
+
 ## Headline: ~64% synced (2026-08-07, after our PR #30 + portal PR #51)
 
 Two different denominators, deliberately kept separate:

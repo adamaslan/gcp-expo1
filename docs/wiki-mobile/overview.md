@@ -92,6 +92,7 @@ The named components and their relationships. Each has its own wiki page.
 | Resilience layer | ✅ Implemented + consumed | `withRetry` is called inside `lib/http.ts`. Circuit breaker still per-call, not per-backend. |
 | Per-backend circuit breaker | ❌ Not yet | Original [[../MULTI_BACKEND_INTEGRATION.md]] Step 7 goal — still open. |
 | Type generation from OpenAPI | ⚠️ Wired in package.json, not run | `npm run gen:types` exists; hand-rolled types remain in clients |
+| `npx tsc --noEmit` | ✅ Clean (PR #32, 2026-08-08) | Was red with 38 errors (unset `@/*` path alias, Vercel functions typed as Next.js, undeclared `svix`/`expo-notifications` deps, 3 dead components importing a nonexistent `backend/schemas/signal`). Nothing in `lib/shared/` touched — infra-only. |
 | Auth on backends | ❌ None | All three backends still open; mobile sends no bearer token. `getToken()` in shim returns `null`. |
 | Dev launcher | ✅ `npm run dev` | Starts 5 backend processes + Expo with trap-cleanup. See [[entity-dev-launcher]]. |
 | Billing / paywall | ✅ Wired | Authenticated checkout call as of PR #22 (was browser redirect). See [[entity-billing]]. |

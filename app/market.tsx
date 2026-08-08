@@ -30,7 +30,7 @@ export default function MarketScreen() {
     try {
       setLoading(true);
       setError(null);
-      const result = await getMarketData();
+      const result = await getMarketData<MarketData>();
       setData(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load market data';

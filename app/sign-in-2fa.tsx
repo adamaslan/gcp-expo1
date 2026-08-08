@@ -42,6 +42,10 @@ export default function SignIn2FAScreen() {
   }
 
   async function handleVerifyCode() {
+    if (!signIn) {
+      return;
+    }
+
     if (!state.code || state.code.length < 6) {
       setState(prev => ({ ...prev, error: 'Please enter the full 6-digit code' }));
       return;

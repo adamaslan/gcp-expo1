@@ -25,10 +25,10 @@ export async function fetchBackend<T>(
   return httpJson<T>(BACKEND_URL, path, httpOptions);
 }
 
-export async function getMarketData() {
-  return fetchBackend('/api/market');
+export async function getMarketData<T = unknown>() {
+  return fetchBackend<T>('/api/market');
 }
 
-export async function getUserProfile() {
-  return fetchBackend('/api/user/profile');
+export async function getUserProfile<T = unknown>() {
+  return fetchBackend<T>('/api/user/profile');
 }

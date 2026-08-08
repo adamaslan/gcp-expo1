@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 type HealthData = {
   clerk?: boolean;
@@ -8,8 +8,8 @@ type HealthData = {
 };
 
 export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<HealthData>
+  req: VercelRequest,
+  res: VercelResponse
 ) {
   if (req.method !== "GET") {
     return res.status(405).json({
