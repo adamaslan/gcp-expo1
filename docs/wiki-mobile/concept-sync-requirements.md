@@ -48,6 +48,14 @@ subtree, or the `nuwrrrld-fullstack` skill's single-sourcing workflow). This is
 as consumed by both repos, and CI fails if the two copies drift (a checksum/diff
 gate).
 
+> ✅ **Done — our PR #31 + portal PR #52 (2026-08-08).** `scripts/check-shared-drift.mjs`
+> (identical in both repos) + a CI job in each that checks out the sibling repo
+> and diffs `lib/shared/sse.ts`, `lib/digest.ts`, `lib/signalCard.ts`,
+> `lib/subscription.ts` (must be byte-identical) and `lib/shared/prefs.ts` /
+> `lib/shared/signalFilters.ts` (must differ only by the documented seam).
+> Answers the open contradiction below: "shared" now means "CI-enforced
+> identical," not "manually kept in sync."
+
 ## 2. Port — one-surface features
 
 ### Portal has, mobile lacks
@@ -101,7 +109,7 @@ parity" is undefined and should not be counted for or against the sync %.
 1. ~~`lib/subscription.ts` de-drift~~ — **done, our PR #29 (2026-08-07)**.
 2. ~~`lib/shared/prefs.ts` + `signalFilters.ts` de-drift~~ — **done, portal PR #50 (2026-08-07)**.
 3. ~~`digest.ts` + `signalCard.ts` de-drift~~ — **done, our PR #30 + portal PR #51 (2026-08-07)**. Resolved standing open-issue #6.
-4. Add a drift-detection CI gate so `lib/shared/` can't silently diverge again. **Next up** in the `/sync-pr` batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`).
+4. ~~Add a drift-detection CI gate so `lib/shared/` can't silently diverge again.~~ — **done, our PR #31 + portal PR #52 (2026-08-08). `/sync-pr` batch closed out.**
 5. Record the AI Council convergence decision.
 6. Port observability (analytics/Sentry) to portal; port backtest to mobile (or decide against).
 
@@ -123,10 +131,12 @@ lands in:
 
 ## Contradictions / tensions
 
-> ❓ Open question: is there a shared package (npm workspace / git subtree) planned,
-> or does "shared" mean "manually kept in sync"? Manual sync is why `prefs.ts` and
-> `signalFilters.ts` already drifted. The de-drift work in §1 is wasted without a
-> mechanism to keep them identical.
+> ✅ Resolved for the six §1 files with our PR #31 + portal PR #52 (2026-08-08)
+> CI gate — not a shared package, but "manually kept in sync" no longer means
+> "silently," since a CI job now fails the build on drift. The other
+> `lib/shared/` files (`signal-policy.ts`, `live-price.ts`, `holdfold-map.ts`)
+> are still portal-only and outside the gate's file list — a real
+> npm-workspace/git-subtree mechanism remains open if that set grows.
 
 ## See also
 

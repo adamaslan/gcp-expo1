@@ -65,6 +65,17 @@ haptic feedback on outcome yet, only on the tap itself — see open questions).
   expects `score`/`factors[]`/`summary`, and a missing score coerces to `0`,
   which would render **Grade F for every user** on this screen.
 
+- **204 empty-watchlist showed "unavailable" instead of "add tickers" (fixed
+  our PR #31, 2026-08-08)** — `usePortfolio` treated a `204` (empty watchlist,
+  nothing to score, no response body) the same as any other non-`ok` health
+  fetch, so `PortfolioScreen` rendered "Health score unavailable — try again
+  shortly" for a brand-new user with zero tickers — a permanently-wrong retry
+  prompt, since retrying an empty watchlist will never produce a score. Fixed
+  by special-casing `hRes.status === 204` to resolve `null` without parsing a
+  body, and `PortfolioScreen` now shows "Add tickers to your watchlist to get
+  your health score" when `watchlist.length === 0`, distinct from the generic
+  unavailable message.
+
 ## Open questions
 
 - ❓ `addToWatchlist` is not optimistic (unlike `removeFromWatchlist`) —

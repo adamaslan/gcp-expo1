@@ -267,3 +267,4 @@ Full write-up:
 ## [2026-08-07] ingest | Our PR #29 fix(subscription): port parseSubscriptionMetadata() — single-surface de-drift, headline ~60%→~61% | pages touched: 3
 ## [2026-08-07] ingest | Portal PR #50 fix(shared): reconcile signalFilters.ts/prefs.ts with us — single-surface de-drift, headline ~61%→~62% | pages touched: 4
 ## [2026-08-07] ingest | Our PR #30 + portal PR #51 fix(shared): reconcile digest.ts/signalCard.ts — dual-surface de-drift + ticker-precedence bugfix, resolves open-issue #6, headline ~62%→~64% | pages touched: 4
+## [2026-08-08] ingest | Our PR #31 + portal PR #52 feat(ci): shared-core drift-detection gate — closes /sync-pr batch item #4, headline unchanged ~64% (tooling, not de-drift); also fixed usePortfolio 204 empty-watchlist handling | pages touched: 4
