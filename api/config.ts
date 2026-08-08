@@ -1,9 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { validateConfig, getConfigSummary } from "@/lib/config-validator";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { getConfigSummary } from "@/lib/config-validator";
 
 export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
+  req: VercelRequest,
+  res: VercelResponse
 ) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });

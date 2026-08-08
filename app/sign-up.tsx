@@ -98,6 +98,10 @@ export default function SignUpScreen() {
   }
 
   async function handleVerifyCode() {
+    if (!signUp) {
+      return;
+    }
+
     if (!state.code) {
       setState(prev => ({ ...prev, error: 'Please enter the verification code' }));
       return;
