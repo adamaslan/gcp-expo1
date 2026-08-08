@@ -51,8 +51,11 @@ export function usePortfolio(): PortfolioState {
           fetch(`${PORTAL_URL}/api/portfolio/watchlist`, { headers }),
         ]);
 
+        // 204 = empty watchlist, nothing to score yet — not an error, and
+        // has no body to parse (see nuwrrrld-portal's
+        // docs/wiki-portal/incident-2026-07-26-portfolio-health-endpoint-missing.md).
         const [hData, sData, wData] = await Promise.all([
-          hRes.ok ? hRes.json() : Promise.resolve(null),
+          hRes.status === 204 ? Promise.resolve(null) : (hRes.ok ? hRes.json() : Promise.resolve(null)),
           sRes.ok ? sRes.json() : Promise.resolve([]),
           wRes.ok ? wRes.json() : Promise.resolve([]),
         ]);
