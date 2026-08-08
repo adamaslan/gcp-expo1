@@ -94,9 +94,11 @@ agree in intent but not in code.
 > skipping `history`) is worth profiling — see
 > [[concept-sync-requirements]] §2.
 
-> ℹ️ **Our PR #32 (2026-08-08) assessed — tsc baseline fix, one bundled shared-drift fix. Headline unchanged at ~64%.** Resolved all 38 pre-existing `npx tsc --noEmit` errors on this repo's baseline: missing `@/*` path alias in tsconfig.json, `@vercel/node` types on `api/*.ts` (these are Vercel functions, not Next.js), missing `expo-notifications`/`svix` dependencies, deleted three dead components importing a nonexistent `../backend/schemas/signal` module, plus real type-safety fixes in `lib/api.ts` (generic `getMarketData<T>()`) and `lib/auth-provider.tsx` (`isSignedIn` undefined→null coercion) — same infra-only class as portal PR #48. Also bundled a portal PR #52 CodeRabbit-review fix ported here to `lib/digest.ts`: `symbolKey || entry.symbol` never fell back to `entry.symbol` for whitespace-only keys because `symbolKey` (an object key) is always truthy — now trimmed first. Confirmed byte-identical with the portal's copy post-fix; `scripts/check-shared-drift.mjs` passes. Not a parity-percentage move (bugfix keeping an already-✅-Synced file in sync), but worth noting since it's a real correctness fix, not just formatting.
+> ℹ️ **Our PR #32 (2026-08-08) assessed — tsc baseline fix + digest.ts bugfix (headline-neutral parts).** Resolved all 38 pre-existing `npx tsc --noEmit` errors on this repo's baseline: missing `@/*` path alias in tsconfig.json, `@vercel/node` types on `api/*.ts` (these are Vercel functions, not Next.js), missing `expo-notifications`/`svix` dependencies, deleted three dead components importing a nonexistent `../backend/schemas/signal` module, plus real type-safety fixes in `lib/api.ts` (generic `getMarketData<T>()`) and `lib/auth-provider.tsx` (`isSignedIn` undefined→null coercion) — same infra-only class as portal PR #48. Also ported a portal PR #52 CodeRabbit-review fix to `lib/digest.ts`: `symbolKey || entry.symbol` never fell back to `entry.symbol` for whitespace-only keys because `symbolKey` (an object key) is always truthy — now trimmed first. See the next entry for the parity-moving part of this same PR.
 
-## Headline: ~64% synced (2026-08-07, after our PR #30 + portal PR #51)
+> ✅ **Our PR #32 (signal-policy/live-price adoption) + our PR #33 (drift-gate CI, 2026-08-08) — item #5 of [[concept-sync-requirements]] §1, closes the `lib/shared/signal-policy.ts` + `lib/shared/live-price.ts` share-debt portal PR #40 created.** Both pure, dependency-free modules (ticker validation, cache freshness/backoff, live-price row/batch parsing) are now byte-identical copies here, tracked by the drift gate on both sides. We don't yet *consume* either module (no live-price feed wired up on this surface), but landing them now — rather than writing our own version later — is the "adopt before drift" ordering [[concept-sync-requirements]] §1 recommends. Our PR #33 also finally adds the drift-gate CI job here (it existed only on the portal side after portal PR #52) plus a real `usePortfolio`/`PortfolioScreen` fix (a 204 empty watchlist was showing "health score unavailable" instead of "add tickers to get scored"). PR #33 supersedes an earlier stale PR #31 whose wiki/code content had already landed on `main` via other merged PRs — only the still-missing CI workflow and portfolio fix were carried forward.
+
+## Headline: ~66% synced (2026-08-08, after our PR #32 + our PR #33 + portal PR #52 — signal-policy.ts/live-price.ts adopted, drift-gate CI on both repos)
 
 Two different denominators, deliberately kept separate:
 
@@ -105,27 +107,29 @@ Two different denominators, deliberately kept separate:
   one domain (Nu AI) has a drifted implementation (Signals/Digest moved to
   Synced this round). Unchanged by portal PR #40 (which added depth, not a new
   shared domain).
-- **Single-source (code-identical) parity ≈ 41%** (was ~39%) — our PR #29
+- **Single-source (code-identical) parity ≈ 44%** (was ~41%) — our PR #29
   ported `parseSubscriptionMetadata()`; portal PR #50 reconciled
   `signalFilters.ts` and confirmed `prefs.ts`'s seam; our PR #30 + portal PR
   #51 de-drifted `digest.ts`/`signalCard.ts` (open-issue #6), including a
   genuine bug fix (portal's ticker-precedence code contradicted its own
-  documented intent) and porting portal's `dataQualityScore` field here.
-  Still owed: portal PR #40 added a whole portal-only real-time signal tier
-  (`signal-queue`, `signal-policy`, read-through `signal_cache`, `live-price` +
-  `live-price-db`, `/api/signals/drain` + `/live`) with **no mobile
-  counterpart**. Two of those modules (`lib/shared/signal-policy.ts`,
-  `lib/shared/live-price.ts`) sit in the supposedly-shared `lib/shared/` folder
-  yet exist only on the portal — share-debt we should claim before writing our
-  own copies. Portal PR #46 adds a fourth portal-only file to `lib/shared/`
-  (`holdfold-map.ts`) — not adoptable here without first unifying our Hold/Fold
+  documented intent) and porting portal's `dataQualityScore` field here; our
+  PR #32 adopted `lib/shared/signal-policy.ts` + `lib/shared/live-price.ts`
+  verbatim, closing the two-module share-debt portal PR #40 created (we have
+  the code but not yet the feature — see the matrix row below). Still owed:
+  portal PR #40's wider real-time signal tier (`signal-queue`, `signal_cache`
+  read-through, `/api/signals/drain` + `/live`) still has no mobile
+  counterpart, and portal PR #46 adds a fourth portal-only `lib/shared/` file
+  (`holdfold-map.ts`), not adoptable without first unifying our Hold/Fold
   backend and verdict schema with the portal's.
 
-The blended **~64%** (up from ~62%) reflects the first three completed items
-of a `/sync-pr` de-drift batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`)
-— item #4 (a drift-detection CI gate) is next. The portal still pulls ahead on
-the signal/Hold-Fold data plane independent of this batch; the risk lives in
-the gap between the two denominators.
+The blended **~66%** reflects the four completed items of the original
+`/sync-pr` de-drift batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`)
+plus a fifth, follow-on item — adopting `signal-policy.ts`/`live-price.ts` —
+done once the drift gate made "adopt before it drifts" enforceable. The
+drift-detection CI gate now runs on **both** repos (our PR #33 added the job
+here; portal PR #52 added it there), covering 8 shared-core files. The portal
+still pulls ahead on the signal/Hold-Fold data plane; the risk lives in the
+gap between the two denominators.
 
 ## Domain parity matrix
 
@@ -149,8 +153,8 @@ the gap between the two denominators.
 | **Public council demo + share cards** | — | `/api/council/public`, `/api/og/verdict/[ticker]`, `/verdict/[ticker]` (portal PR #43) | none (reuses portal's `lib/openrouter.ts`) | ⬅️ Portal-only, unauthenticated growth surface |
 | **Backtest** | — | `/api/backtest`, `backtest.ts` | — | ⬅️ Portal-only |
 | **Watchlist store** | folded into `usePortfolio` | `watchlist-store.ts` (add now enqueues a signal refresh, PR #40) | — | ⬅️ Portal-only |
-| **Signal cache / queue** | — | `signal-queue.ts`, `signal-policy.ts`, `signal_cache`, `/api/signals/drain` | `signal-policy.ts` in `lib/shared/` but portal-only | ⬅️ Portal-only (PR #40) |
-| **Real-time price tier** | — | `live-price.ts`, `live-price-db.ts`, `live_prices`, `/api/signals/live` (Finnhub WS) | `live-price.ts` in `lib/shared/` but portal-only | ⬅️ Portal-only (PR #40) |
+| **Signal cache / queue** | `signal-policy.ts` present, unconsumed | `signal-queue.ts`, `signal-policy.ts`, `signal_cache`, `/api/signals/drain` | `signal-policy.ts` **byte-identical (our PR #32)** | 🟡 Partial — module shared, feature still portal-only |
+| **Real-time price tier** | `live-price.ts` present, unconsumed | `live-price.ts`, `live-price-db.ts`, `live_prices`, `/api/signals/live` (Finnhub WS) | `live-price.ts` **byte-identical (our PR #32)** | 🟡 Partial — module shared, feature still portal-only |
 | **Onboarding** | `OnboardingScreen` | — | — | ➡️ Mobile-only |
 | **Analytics / Sentry** | `analytics.ts`, `sentry.ts` ([[entity-monitoring]]) | — | — | ➡️ Mobile-only |
 | **Schwab health** | `schwab-health.ts` | — | — | ➡️ Mobile-only |
@@ -160,13 +164,13 @@ Legend: ✅ synced · 🟡 partial · 🔴 divergent · ⬅️ portal-only · �
 ## Contradictions / tensions
 
 > ⚠️ Contradiction: `lib/shared/` is meant to be the single source of truth, but
-> `prefs.ts` and `signalFilters.ts` already differ between repos *inside that very
-> folder* — and portal PR #40 added `signal-policy.ts` + `live-price.ts`, PR #46
-> added `holdfold-map.ts`, all three portal-only with no mobile counterpart. A
-> "shared" module that isn't byte-identical is worse than an obviously
-> per-platform one, because it hides drift — and `holdfold-map.ts` specifically
-> can't be adopted here without first switching our Hold/Fold backend and
-> verdict schema to match the portal's. See [[concept-sync-requirements]].
+> `prefs.ts` and `signalFilters.ts` differ between repos *inside that very
+> folder* on documented seams — and portal PR #46 added `holdfold-map.ts`,
+> portal-only with no mobile counterpart. `signal-policy.ts` + `live-price.ts`
+> (portal PR #40) were the same standing-drift-invitation pattern until our PR
+> #32 adopted them verbatim. `holdfold-map.ts` can't follow the same path —
+> we'd first need to switch our Hold/Fold backend and verdict schema to match
+> the portal's. See [[concept-sync-requirements]].
 
 > ⚠️ Contradiction: [[concept-backend-is-source-of-truth]] argues for one
 > canonical adapter, yet `digest.ts` / `signalCard.ts` exist as two independently-

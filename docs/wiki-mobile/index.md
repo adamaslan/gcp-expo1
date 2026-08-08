@@ -1,6 +1,6 @@
 # Wiki Index — gcp3-mobile
 
-_Last updated: 2026-08-07 (our PR #30 + portal PR #51 — digest.ts/signalCard.ts de-drift, resolves open-issue #6; parity headline ~60%→~64%)_
+_Last updated: 2026-08-08 (our PR #32 + our PR #33 + portal PR #52 — signal-policy.ts/live-price.ts adopted, drift-gate CI on both repos; parity headline ~64%→~66%)_
 
 Catalog is organized by page type. Read `index.md` first on any query to find relevant pages, then drill in. For the philosophy behind this wiki pattern, see [[ORIGIN]].
 
