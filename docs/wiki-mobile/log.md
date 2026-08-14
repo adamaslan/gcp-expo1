@@ -269,3 +269,4 @@ Full write-up:
 ## [2026-08-07] ingest | Our PR #30 + portal PR #51 fix(shared): reconcile digest.ts/signalCard.ts — dual-surface de-drift + ticker-precedence bugfix, resolves open-issue #6, headline ~62%→~64% | pages touched: 4
 ## [2026-08-08] ingest | Our PR #32 fix(mobile): resolve all 38 tsc --noEmit errors on baseline + adopt lib/shared/signal-policy.ts + live-price.ts from portal — headline ~64%→~66% (single-source ~41%→~44%) | pages touched: 1
 ## [2026-08-08] ingest | Our PR #33 feat(ci): shared-core drift-detection gate (our side) — supersedes stale PR #31 (closed, content already on main), also fixes usePortfolio 204 empty-watchlist bug, headline unchanged ~66% | pages touched: 3
+## [2026-08-14] ingest | Portal PR #59 feat(ci): afternoon pre-close pipeline workflow + GCP scheduler setup script — CI/scheduler infra only, no shared-code or feature-domain change, headline unchanged ~66% | pages touched: 1
