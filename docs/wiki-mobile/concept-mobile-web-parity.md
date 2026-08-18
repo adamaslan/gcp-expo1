@@ -100,6 +100,8 @@ agree in intent but not in code.
 
 > ℹ️ **Portal PR #59 (2026-08-14) assessed — CI/scheduler infra only, headline unchanged at ~66%.** Adds `afternoon-pipeline.yml` (GitHub Actions cron for their 3:15 PM ET signals→council→theses→distribution run) and `setup-schedulers.sh` (GCP Cloud Scheduler provisioning for the open-check/main-briefing/post-close-scorer jobs) — see portal's `[[decision-afternoon-pipeline-cron-split]]`. Server-side scheduling only; no `lib/`, `lib/shared/`, or app-facing code touched. This app has no equivalent server-side cron layer to compare against, so this PR doesn't create or close a parity gap.
 
+> ℹ️ **Portal PR #64 + #65 (2026-08-17/18) assessed — test tooling + portal-only UI, headline unchanged at ~66%.** #64 added their Playwright e2e suite (credential-gated fault injection, GCP-WIF CI, nulogdash browser-tier merge); #65 was a second-pass review of #64's cheap fix commit that built a dashboard health-status banner (`app/dashboard/HealthBanner.tsx`, polling their `/api/health`) so a required e2e test had a real `data-testid` target instead of a phantom selector, plus doc-consistency fixes. Neither touches any `lib/shared/` module or cross-surface business logic. This app has no Playwright/e2e tier and no `/api/health` dashboard probe to compare against, so neither PR creates or closes a parity gap — candidates only if this surface later grows an equivalent test tier or health banner.
+
 ## Headline: ~66% synced (2026-08-08, after our PR #32 + our PR #33 + portal PR #52 — signal-policy.ts/live-price.ts adopted, drift-gate CI on both repos)
 
 Two different denominators, deliberately kept separate:
