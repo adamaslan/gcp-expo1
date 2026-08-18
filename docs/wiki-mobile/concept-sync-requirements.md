@@ -40,13 +40,25 @@ subtree, or the `nuwrrrld-fullstack` skill's single-sourcing workflow). This is
 | ~~`lib/shared/signal-policy.ts`~~ | **Done — our PR #32 (2026-08-08).** Adopted verbatim (pure ticker validation / cache-freshness / backoff) before we grew our own copy. Byte-identical, tracked by the drift gate. Not consumed by a feature here yet — see §2's Signal cache/queue row. |
 | ~~`lib/shared/live-price.ts`~~ | **Done — our PR #32 (2026-08-08).** Adopted verbatim (pure live-price row/batch parsing). Byte-identical, tracked by the drift gate. We don't call `/api/signals/live` yet — see §2's Real-time price tier row. |
 | `lib/shared/holdfold-map.ts` | New on the portal (PR #46), mobile-absent. Pure `/signals`→verdict mapper. **Not a drop-in adopt** — our `clients/holdfold.ts` targets a different backend (`EXPO_PUBLIC_HOLDFOLD_BACKEND_URL`) with a different verdict schema entirely (`symbol`/`risk_level`/`volatility_regime`/`atr` vs. this module's `ticker`/`confidenceLabel`/`bias`/`adx`). Adopting it means switching our Hold/Fold backend first, not just importing a file. |
-| ~~`lib/digest.ts`~~ | **Logic done — our PR #30 + portal PR #51 (2026-08-07).** Fixed a real ticker-precedence bug in portal's copy (contradicted its own comment); ported portal's `dataQualityScore` here. Both copies confirmed byte-identical. Still open: physically moving the file into `lib/shared/` — a bigger, lower-priority restructuring, not required for parity. Resolves [[overview#open-issues\|open-issue #6]] and [[entity-signals-digest#open-questions]]. |
+| ~~`lib/digest.ts`~~ | **Re-synced — our PR #36 + portal PR #66 (2026-08-18)**, after portal's per-symbol `updated` staleness fix landed web-first and drifted for part of one day; see [[concept-mobile-web-parity]]. Originally: **logic done — our PR #30 + portal PR #51 (2026-08-07).** Fixed a real ticker-precedence bug in portal's copy (contradicted its own comment); ported portal's `dataQualityScore` here. Both copies confirmed byte-identical. Still open: physically moving the file into `lib/shared/` — a bigger, lower-priority restructuring, not required for parity. Resolves [[overview#open-issues\|open-issue #6]] and [[entity-signals-digest#open-questions]]. |
 | ~~`lib/signalCard.ts`~~ | **Logic done — same PRs.** We adopted portal's `_baseAppUrl` unused-param convention; portal adopted our `encodeURIComponent(signal.id)`. Move to `lib/shared/` still open, same as `digest.ts`. |
 | `lib/nuai.ts` | Reconcile chat contract (token budget, refusal guardrails, prompt-chip grounding — see [[entity-nuai]]). Ensure request/response types match the portal `/api/nuai`. |
 
 **Definition of done:** each file exists once in `lib/shared/`, is byte-identical
 as consumed by both repos, and CI fails if the two copies drift (a checksum/diff
 gate).
+
+> ⚠️ **Known limitation — the gate is circular (found 2026-08-18, our PR #36 +
+> portal PR #66/#67).** Our `shared-drift-check` checks out the portal's default
+> branch and theirs checks out ours, so a change to a gated file can only be
+> green on one side at a time: whichever PR carries it first fails against the
+> other repo's not-yet-updated `main`, and the mirror PR fails symmetrically.
+> Neither can go green first. The working procedure is to open both PRs, merge
+> the one whose repo the change originated in while its drift job is still red,
+> then re-run the sibling's job, which now passes. The expected failure must be
+> **read**, not just tolerated — confirm its output names only the file being
+> ported, since an unrelated drift would otherwise ride along invisibly inside
+> a failure everyone has agreed to ignore.
 
 ## 2. Port — one-surface features
 
