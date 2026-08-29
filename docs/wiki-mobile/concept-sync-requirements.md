@@ -135,6 +135,16 @@ parity" is undefined and should not be counted for or against the sync %.
 6. **Adopt `nuwrrrld-portal/lib/shared/consent.ts` + `.../legal-consent.ts` and gate `analytics.ts`/`sentry.ts` behind the `analytics` category (portal PR #77).** Highest-ROI open item: a compliance obligation, not a nice-to-have, and the modules are adoptable today (only the SecureStore seam differs). Add both to the drift gate on adoption.
 7. Record the AI Council convergence decision.
 8. Port observability (analytics/Sentry) to portal — consent-gated from the start (see #6); port backtest to mobile (or decide against). Wire ourselves up to consume `signal-policy.ts`/`live-price.ts` if the real-time signal tier is ever ported.
+9. **Adopt `lib/shared/attribution.ts`.** First-party acquisition attribution
+   (UTM/gclid/fbclid/referrer, 90-day first-touch). Adopt it *before* we grow
+   our own, not after. A measurement gap rather than a compliance one, so it
+   sits behind the consent item.
+10. **Give this app a data-subject-rights path.** The portal serves
+    `/api/privacy/{export,profile,delete,rectify}` against the shared Clerk
+    identity; we serve none, so GDPR access/erasure/rectification is web-only.
+    Cheapest correct fix is to link out to the portal's endpoints rather than
+    reimplement — the erasure cascade and the statutory-clock ledger should stay
+    single-copy. Compliance asymmetry, same class as the consent item.
 
 ## Where it appears
 

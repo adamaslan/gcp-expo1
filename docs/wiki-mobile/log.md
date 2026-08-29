@@ -291,3 +291,17 @@ so it counts as a gap. Single-source ~44% → ~40% — no de-drift this round an
 app tracks (`analytics.ts` + `sentry.ts`) with no consent gate while the portal now blocks
 tracking until opt-in, so the shared-identity product is non-compliant until we adopt the module.
 `concept-sync-requirements.md` priority #6, `concept-mobile-web-parity.md` matrix + contradictions.
+
+## [2026-08-29] ingest | portal auth/DSAR/analytics PR | pages touched: 3
+
+Immediate follow-up to portal PR #77, built on that branch. Headline ~63% →
+~62%: `lib/shared/attribution.ts` is a third portal-only shared module
+(single-source ~40% → ~38%), and the portal's data-subject-rights surface
+(`/api/privacy/{export,profile,delete,rectify}` + the `privacy_requests`
+statutory-clock ledger) plus its consent-gated analytics sink are web-only.
+
+Stacked on the consent contradiction logged for #77, that is a second
+compliance asymmetry on one Clerk identity: GDPR access, erasure and
+rectification work on web and have no mechanism here. Sync requirements gain
+#9 (adopt `attribution.ts`) and #10 (link out to the portal's rights endpoints
+rather than reimplement, keeping the cascade single-copy).
