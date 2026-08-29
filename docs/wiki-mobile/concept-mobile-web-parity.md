@@ -104,16 +104,26 @@ agree in intent but not in code.
 
 > ℹ️ **Our PR #36 and portal PRs #66 + #67 (2026-08-18) assessed — headline unchanged at ~66%, but one shared module was re-synced.** Portal PR #66 changed `lib/digest.ts` while landing its coverage pipeline: `adaptLiveSignals` now derives `generatedAt`/`isStale` from each symbol's own `updated` field, falling back to the batch-wide timestamp only when a symbol omits one. That closed a real defect — a symbol whose data lagged the batch inherited the batch's fresh timestamp and never tripped `computeIsStale()` — but it landed web-only, so the drift gate went red on **both** repos at once, each comparing against the other's `main`. Our PR #36 ported the same fix verbatim (alongside its `subscription.ts` trialEnd change), which cleared the deadlock and restored `digest.ts` to byte-identical. No new shared module and no new shared domain, so neither denominator moves; this is a *repair* of existing single-source parity, not an extension of it. Portal PR #67 (`scripts/hydrate-local.mjs`) is portal-only tooling — a local runner for their hydration pipeline, indicator math pinned to the Modal Python implementation by a parity test; we have no counterpart and need none.
 
-## Headline: ~66% synced (2026-08-08, after our PR #32 + our PR #33 + portal PR #52 — signal-policy.ts/live-price.ts adopted, drift-gate CI on both repos)
+> ⚠️ **Portal PR #77 (2026-08-29) assessed — headline ~66% → ~63%. A new cross-surface obligation lands web-only and this app is on the wrong side of it.** The portal added cookie/tracking consent infrastructure (a consent banner + per-category preferences in its root layout, a `nu_consent` first-party cookie via `POST /api/consent`, `consent_records` + `legal_consent_events` tables), an express ToS/Privacy checkbox gating Clerk sign-up, and `/api/privacy/{export,profile,delete}` data-subject-rights endpoints.
+>
+> Two effects on the number. First, `nuwrrrld-portal/lib/shared/consent.ts` and `.../legal-consent.ts` are **new, pure, and deliberately written to be mirrored here** — but not yet ported, so the portal now carries 15 `lib/shared/` modules to our 5. Unlike `universe-policy.ts`/`holdfold-map.ts`, these two *are* adoptable today: consent has no backend or schema dependency this app lacks, only the prefs storage seam (`lib/shared/prefs.ts` → SecureStore) already solved elsewhere in this matrix.
+>
+> Second — and more urgent — consent capture is a **compliance obligation that binds this app too**. GDPR (opt-in) and CPRA (opt-out + GPC + "Do Not Sell or Share") apply to the Expo app exactly as to the portal. This app runs `analytics.ts` + `sentry.ts` today with **no consent gate**, and it shares one Clerk identity and one user base with the portal — so a user who opts out on web is still tracked here. Until this app adopts `lib/shared/consent.ts` and gates its analytics init, the *product* is non-compliant even though the portal in isolation now is not. New matrix row below; see `concept-sync-requirements.md` §"Cookie consent / privacy rights" — priority #6.
+
+## Headline: ~63% synced (2026-08-29, after portal PR #77 — consent domain lands web-only, +2 portal-only `lib/shared/` modules)
 
 Two different denominators, deliberately kept separate:
 
-- **Feature-domain parity ≈ 82%** — 9 of 11 shared product domains exist and
-  work on both surfaces; only the AI Council is architecturally divergent, and
-  one domain (Nu AI) has a drifted implementation (Signals/Digest moved to
-  Synced this round). Unchanged by portal PR #40 (which added depth, not a new
-  shared domain).
-- **Single-source (code-identical) parity ≈ 44%** (was ~41%) — our PR #29
+- **Feature-domain parity ≈ 76%** (was ~82%) — 9 of 12 shared product domains
+  exist and work on both surfaces. Portal PR #77 adds a 12th, **Cookie consent /
+  privacy rights**, a real cross-surface obligation that today exists on the
+  portal only — counted as a gap, not a portal-only bonus. The AI Council is
+  still architecturally divergent; Nu AI is still drifted.
+- **Single-source (code-identical) parity ≈ 40%** (was ~44%) — no module was
+  de-drifted or adopted this round, and portal PR #77 adds two more portal-only
+  files under `lib/shared/` (`consent.ts`, `legal-consent.ts`), so the
+  denominator grows while the numerator holds; the portal now carries 15
+  `lib/shared/` modules to our 5. Prior progress unchanged: our PR #29
   ported `parseSubscriptionMetadata()`; portal PR #50 reconciled
   `signalFilters.ts` and confirmed `prefs.ts`'s seam; our PR #30 + portal PR
   #51 de-drifted `digest.ts`/`signalCard.ts` (open-issue #6), including a
@@ -128,7 +138,14 @@ Two different denominators, deliberately kept separate:
   (`holdfold-map.ts`), not adoptable without first unifying our Hold/Fold
   backend and verdict schema with the portal's.
 
-The blended **~66%** reflects the four completed items of the original
+The blended **~63%** (down from ~66%) reflects the earlier de-drift batch
+progress, minus portal PR #77's two effects: a new required cross-surface domain
+that exists on one surface, and two more unadopted `lib/shared/` modules. The
+number sat at ~66% from 2026-08-08 through portal PR #75 (a run of portal-only
+infra PRs); PR #77 is the first feature-scoped change since, and it moves the
+number down.
+
+The historical ~66% reflected the four completed items of the original
 `/sync-pr` de-drift batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`)
 plus a fifth, follow-on item — adopting `signal-policy.ts`/`live-price.ts` —
 done once the drift gate made "adopt before it drifts" enforceable. The
@@ -156,13 +173,14 @@ gap between the two denominators.
 | **Push** | `pushNotifications.ts` | `/api/push` | none | 🟡 Present both, unshared |
 | **Referral / share** | `shareSheet.ts` | `/api/referral`, `dashboard/share` | none | 🟡 Present both, unshared |
 | **AI Council** | `clients/council.ts` composer → ai-text RAG backend ([[entity-council-composer]]) | 6-seat OpenRouter deliberation, server-side | none | 🔴 Divergent architectures |
+| **Cookie consent / privacy rights** | — (our `analytics.ts`+`sentry.ts` run *without* a consent gate) | consent banner + per-category prefs in root layout, `nu_consent` cookie, `/api/consent`, `/api/legal-consent`, `/api/privacy/{export,profile,delete}`, `consent_records`+`legal_consent_events` (portal PR #77) | `nuwrrrld-portal/lib/shared/consent.ts`, `.../legal-consent.ts` — portal-only so far, **adoptable now** (only the prefs storage seam differs) | ⬅️ Portal-only — **required port, not optional**: GDPR/CPRA bind this app too. See `concept-sync-requirements.md` §"Cookie consent / privacy rights" |
 | **Public council demo + share cards** | — | `/api/council/public`, `/api/og/verdict/[ticker]`, `/verdict/[ticker]` (portal PR #43) | none (reuses portal's `lib/openrouter.ts`) | ⬅️ Portal-only, unauthenticated growth surface |
 | **Backtest** | — | `/api/backtest`, `backtest.ts` | — | ⬅️ Portal-only |
 | **Watchlist store** | folded into `usePortfolio` | `watchlist-store.ts` (add now enqueues a signal refresh, PR #40) | — | ⬅️ Portal-only |
 | **Signal cache / queue** | `signal-policy.ts` present, unconsumed | `signal-queue.ts`, `signal-policy.ts`, `signal_cache`, `/api/signals/drain` | `signal-policy.ts` **byte-identical (our PR #32)** | 🟡 Partial — module shared, feature still portal-only |
 | **Real-time price tier** | `live-price.ts` present, unconsumed | `live-price.ts`, `live-price-db.ts`, `live_prices`, `/api/signals/live` (Finnhub WS) | `live-price.ts` **byte-identical (our PR #32)** | 🟡 Partial — module shared, feature still portal-only |
 | **Onboarding** | `OnboardingScreen` | — | — | ➡️ Mobile-only |
-| **Analytics / Sentry** | `analytics.ts`, `sentry.ts` ([[entity-monitoring]]) | — | — | ➡️ Mobile-only |
+| **Analytics / Sentry** | `analytics.ts`, `sentry.ts` ([[entity-monitoring]]) — **runs with no consent gate; portal PR #77 makes this the product's compliance gap** | — | — | ➡️ Mobile-only |
 | **Schwab health** | `schwab-health.ts` | — | — | ➡️ Mobile-only |
 
 Legend: ✅ synced · 🟡 partial · 🔴 divergent · ⬅️ portal-only · ➡️ mobile-only.
@@ -181,6 +199,15 @@ Legend: ✅ synced · 🟡 partial · 🔴 divergent · ⬅️ portal-only · �
 > ⚠️ Contradiction: [[concept-backend-is-source-of-truth]] argues for one
 > canonical adapter, yet `digest.ts` / `signalCard.ts` exist as two independently-
 > evolved copies. This is [[overview#open-issues|overview open-issue #6]].
+
+> ⚠️ Contradiction: this app ships `analytics.ts` + `sentry.ts` (client tracking)
+> with **no consent gate**, while the portal (its PR #77) now blocks all
+> non-necessary tracking until the user opts in and honors GPC/DNT. The two
+> surfaces share one Clerk identity and one user base, so a user who opts out on
+> web is still tracked in the app. Until this app adopts
+> `nuwrrrld-portal/lib/shared/consent.ts` and gates its analytics init (see
+> `concept-sync-requirements.md` §"Cookie consent / privacy rights", priority
+> #6), the *product* is non-compliant even though the portal in isolation is not.
 
 > ❓ Open question: the AI Council is the flagship feature and is the *least*
 > synced — portal runs a self-contained 6-seat OpenRouter debate while mobile taps

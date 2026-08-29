@@ -274,3 +274,20 @@ Full write-up:
 ## [2026-08-18] ingest | Our PR #36 fix(subscription): trialEnd only while trialing + ported portal's lib/digest.ts per-symbol timestamp fix — restores digest.ts to byte-identical, headline unchanged ~66% | pages touched: 2
 
 Portal PR #66 changed `lib/digest.ts` web-only: `adaptLiveSignals` now derives `generatedAt`/`isStale` from each symbol's own `updated` field, falling back to the batch-wide timestamp only when a symbol omits one — fixing a symbol whose data lagged the batch inheriting the batch's fresh timestamp and never tripping `computeIsStale()`. Because each repo's `shared-drift-check` checks out the *other* repo's default branch, that one-sided change turned the gate red on both repos at once, and neither could clear first. Porting the identical fix here broke the deadlock: merge portal #66 → re-run our job (green) → merge this PR → re-run theirs (green). `digest.ts` is byte-identical again. No new shared module, so neither denominator moves — a repair of existing single-source parity, not an extension.
+
+## [2026-08-29] cross-repo | Portal PR #77 feat(consent): cookie consent + sign-up legal consent + privacy rights — headline ~66% → ~63% | pages touched: 2
+
+Portal PR #77 (Phases 2, 1.4, 6 of `nuwrrrld-portal/docs/todo-auth-cookies-tracking.md`) added
+cookie/tracking consent to the portal: a consent banner + per-category preferences in its root
+layout, the `nu_consent` first-party cookie via `POST /api/consent`, append-only `consent_records`
++ `legal_consent_events` tables, an unticked ToS/Privacy checkbox gating Clerk sign-up, and
+`/api/privacy/{export,profile,delete}` data-subject-rights endpoints.
+
+Parity ⚠️: **headline ~66% → ~63%.** Feature-domain ~82% → ~76% — "Cookie consent / privacy
+rights" is a genuine cross-surface obligation (GDPR/CPRA bind this app too) that exists web-only,
+so it counts as a gap. Single-source ~44% → ~40% — no de-drift this round and two new portal-only
+`lib/shared/` modules (`consent.ts`, `legal-consent.ts`); portal now has 15 shared modules to our
+5. Both are adoptable today — only the prefs storage seam differs. New contradiction logged: this
+app tracks (`analytics.ts` + `sentry.ts`) with no consent gate while the portal now blocks
+tracking until opt-in, so the shared-identity product is non-compliant until we adopt the module.
+`concept-sync-requirements.md` priority #6, `concept-mobile-web-parity.md` matrix + contradictions.
