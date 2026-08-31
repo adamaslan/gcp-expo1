@@ -26,7 +26,7 @@ So the rule for this roadmap:
    never from a stale local `main`, never from another feature branch.
 3. **Merge in shared-file-overlap order.** The PR that touches the
    highest-churn shared file merges first; the rest rebase onto it. This
-   converts N conflicts into N−1 fast-forwards.
+   converts N contended merges into N−1 clean rebases.
 4. **Wiki-touching PRs are serialized, not parallelized.** Only one open PR at
    a time may have uncommitted edits to `log.md` / the parity page. The next
    wiki PR waits for the previous to merge, then rebases.
@@ -72,7 +72,9 @@ So the rule for this roadmap:
 
 ## The roadmap — sequenced PRs
 
-Ordered so each merges as a fast-forward given the ones before it. Grouped into
+Ordered so each merges cleanly given the ones before it — squash merges, so
+not literally fast-forwards, but each rebases onto its predecessor without
+conflicts. Grouped into
 waves; within a wave, PRs touch disjoint files and may proceed in parallel.
 
 ### Wave 0 — unblock the queue (do first, no new work)
@@ -84,10 +86,10 @@ it first means every later wiki PR appends *after* #39's parity-page and
 **Action:** `gh pr merge 39 --squash --delete-branch`. No code changes.
 
 #### PR-0b — rebase #28 onto post-#39 main, resolve once
-#28 is already conflicting; it needs a rebase regardless. After #39 lands,
+PR #28 is already conflicting; it needs a rebase regardless. After #39 lands,
 `git rebase origin/main` on `feat/mobile-interactivity-batch`, resolve the
 3 append-point wiki files by hand once, force-push. Do **not** add anything to
-#28 while doing this.
+PR #28 while doing this.
 
 ---
 
