@@ -144,6 +144,8 @@ here; portal PR #52 added it there), covering 8 shared-core files. The portal
 still pulls ahead on the signal/Hold-Fold data plane; the risk lives in the
 gap between the two denominators.
 
+> ℹ️ **Portal PR #91 (2026-08-31) assessed — portal-only bug fix, headline unchanged at ~62%.** The portal repaired its signal-card "Go Deeper" council call, which had rendered every success as an error since the four-field verdict migration (`/api/council` returns `{ verdict, ... }`; the caller still read `data.answer`). Adds a portal-only `lib/shared/councilErrors.ts` and edits the portal's `lib/shared/prompts.ts`. Nothing mobile-reachable: this repo has no `/api/council` caller and carries neither module, so no drift is introduced and no port is owed. See `nuwrrrld-portal/docs/wiki-portal/incident-2026-08-31-signals-go-deeper-contract-drift.md`. Neither denominator moves.
+
 ## Domain parity matrix
 
 | Domain | Mobile | Portal | Shared module | Status |
