@@ -105,7 +105,7 @@ agree in intent but not in code.
 > ℹ️ **Our PR #36 and portal PRs #66 + #67 (2026-08-18) assessed — headline unchanged at ~66%, but one shared module was re-synced.** Portal PR #66 changed `lib/digest.ts` while landing its coverage pipeline: `adaptLiveSignals` now derives `generatedAt`/`isStale` from each symbol's own `updated` field, falling back to the batch-wide timestamp only when a symbol omits one. That closed a real defect — a symbol whose data lagged the batch inherited the batch's fresh timestamp and never tripped `computeIsStale()` — but it landed web-only, so the drift gate went red on **both** repos at once, each comparing against the other's `main`. Our PR #36 ported the same fix verbatim (alongside its `subscription.ts` trialEnd change), which cleared the deadlock and restored `digest.ts` to byte-identical. No new shared module and no new shared domain, so neither denominator moves; this is a *repair* of existing single-source parity, not an extension of it. Portal PR #67 (`scripts/hydrate-local.mjs`) is portal-only tooling — a local runner for their hydration pipeline, indicator math pinned to the Modal Python implementation by a parity test; we have no counterpart and need none.
 
 > ℹ️ **Portal PR #89 (2026-08-31) assessed — their billing repair, headline unchanged at ~62%.** A live-Stripe-account audit found the portal's checkout broken on *both* plans: `STRIPE_PRICE_ANNUAL` still held a literal placeholder — the same defect their PR #79 recorded as fixed ten days earlier, where the code and docs were corrected but the value never reached the deployed environment — and `STRIPE_PRICE_MONTHLY` pointed at an archived, inactive price. Separately, their only live webhook endpoint targets the `gcp3-backend` Cloud Run service, so nothing was registered for their `/api/webhooks/stripe` and no subscription events reached the portal at all. All of it is portal-side env wiring and provisioning tooling; `lib/subscription.ts` is untouched and stays byte-identical, and this app has no Stripe price IDs or webhook endpoint of its own, so neither denominator moves. **What is worth carrying here** is the failure mode rather than the fix: a billing identifier marked "repaired" in a doc stayed broken in the running app for ten days because nothing verified the deployed value. This app's store-billing configuration has never had an equivalent audit — see [[concept-sync-requirements]].
-
+>
 > ⚠️ **Headline resynced 2026-08-31.** This page read ~66% (2026-08-08) while `wiki-portal` read ~62%, tripping the cross-wiki lint check. The portal figure is the current one: their PRs #77/#78/#79 dropped the blended number when consent + DSAR shipped web-only, and this page was never updated to follow. Corrected to ~62% here; the underlying asymmetry is tracked as an open item in [[concept-sync-requirements]], not closed by this edit.
 
 ## Headline: ~62% synced (2026-08-31, after portal PRs #77/#78/#79 + mobile PR #39 — consent/DSAR landed web-only; resynced with wiki-portal during portal PR #89 ingest)
@@ -132,10 +132,13 @@ Two different denominators, deliberately kept separate:
   (`holdfold-map.ts`), not adoptable without first unifying our Hold/Fold
   backend and verdict schema with the portal's.
 
-The blended **~66%** reflects the four completed items of the original
-`/sync-pr` de-drift batch (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`)
-plus a fifth, follow-on item — adopting `signal-policy.ts`/`live-price.ts` —
-done once the drift gate made "adopt before it drifts" enforceable. The
+The blended figure reached **~66%** on the four completed items of the
+original `/sync-pr` de-drift batch
+(`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`) plus a fifth, follow-on
+item — adopting `signal-policy.ts`/`live-price.ts` — done once the drift gate
+made "adopt before it drifts" enforceable. It has since fallen to the current
+**~62%** as consent/DSAR shipped web-only (portal PRs #77/#78/#79), widening
+the feature-domain gap without any shared module drifting. The
 drift-detection CI gate now runs on **both** repos (our PR #33 added the job
 here; portal PR #52 added it there), covering 8 shared-core files. The portal
 still pulls ahead on the signal/Hold-Fold data plane; the risk lives in the
