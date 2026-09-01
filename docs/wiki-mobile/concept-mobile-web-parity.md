@@ -106,43 +106,52 @@ agree in intent but not in code.
 
 > ℹ️ **Portal PR #89 (2026-08-31) assessed — their billing repair, headline unchanged at ~62%.** A live-Stripe-account audit found the portal's checkout broken on *both* plans: `STRIPE_PRICE_ANNUAL` still held a literal placeholder — the same defect their PR #79 recorded as fixed ten days earlier, where the code and docs were corrected but the value never reached the deployed environment — and `STRIPE_PRICE_MONTHLY` pointed at an archived, inactive price. Separately, their only live webhook endpoint targets the `gcp3-backend` Cloud Run service, so nothing was registered for their `/api/webhooks/stripe` and no subscription events reached the portal at all. All of it is portal-side env wiring and provisioning tooling; `lib/subscription.ts` is untouched and stays byte-identical, and this app has no Stripe price IDs or webhook endpoint of its own, so neither denominator moves. **What is worth carrying here** is the failure mode rather than the fix: a billing identifier marked "repaired" in a doc stayed broken in the running app for ten days because nothing verified the deployed value. This app's store-billing configuration has never had an equivalent audit — see [[concept-sync-requirements]].
 >
-> ⚠️ **Headline resynced 2026-08-31.** This page read ~66% (2026-08-08) while `wiki-portal` read ~62%, tripping the cross-wiki lint check. The portal figure is the current one: their PRs #77/#78/#79 dropped the blended number when consent + DSAR shipped web-only, and this page was never updated to follow. Corrected to ~62% here; the underlying asymmetry is tracked as an open item in [[concept-sync-requirements]], not closed by this edit.
+> ⚠️ **Headline resynced 2026-08-31, body reconciled 2026-09-01 (our PR #39).** On 2026-08-31 this page's headline was corrected from a stale ~66% to ~62% to match `wiki-portal` and clear the cross-wiki lint, but the denominator bullets and the matrix below were left describing the old ~66% world. Our PR #39 finishes the job: feature-domain drops to ≈76% (consent is a 12th, web-only domain), single-source to ≈40%, and the matrix gains the Cookie-consent, DSAR, and Attribution rows. The consent/DSAR asymmetry itself is still open — see [[concept-sync-requirements]] priority #1 — but the page now measures it instead of omitting it.
 
-## Headline: ~62% synced (2026-08-31, after portal PRs #77/#78/#79 + mobile PR #39 — consent/DSAR landed web-only; resynced with wiki-portal during portal PR #89 ingest)
+> ✅ **Our PR #39 (2026-09-01) — adopts `lib/shared/attribution.ts`, matrix + denominators recomputed.** Portal PR #81 landed `attribution.ts` on portal `main` (the pure first-party acquisition model — `nu_attrib` cookie, UTM/gclid/fbclid/referrer, 90-day first-touch, plus a `parseTouch` hardened against a tampered cookie via `cleanKnownKeys` + `isValidTimestamp`). This PR mirrors it verbatim and registers the pair in `scripts/check-shared-drift.mjs` on both repos (`normalize: null`, 9 files gated now). Because portal already carries the file on `main`, the circular drift-gate problem does not arise — CI is green on both sides. We now carry **6** of portal's **16** `lib/shared/` modules; single-source parity ~38% → ~40%. **This PR also recomputes what the 2026-08-31 headline resync left undone**: the matrix gains a Cookie-consent/privacy-rights row, an Attribution row and a DSAR row, and the feature-domain denominator drops to ≈76% (12 domains, consent web-only). No consumer wiring on mobile — the shared model is adopted but nothing captures a touch here; a mobile attribution-capture path is owed ([[concept-sync-requirements]]). Blended holds at **~62%**.
+
+## Headline: ~62% synced (2026-09-01, after portal PRs #77/#78 + mobile PR #39 — consent/DSAR web-only; `attribution.ts` mirrored, matrix + denominators recomputed to match)
 
 Two different denominators, deliberately kept separate:
 
-- **Feature-domain parity ≈ 82%** — 9 of 11 shared product domains exist and
-  work on both surfaces; only the AI Council is architecturally divergent, and
-  one domain (Nu AI) has a drifted implementation (Signals/Digest moved to
-  Synced this round). Unchanged by portal PR #40 (which added depth, not a new
-  shared domain).
-- **Single-source (code-identical) parity ≈ 44%** (was ~41%) — our PR #29
-  ported `parseSubscriptionMetadata()`; portal PR #50 reconciled
-  `signalFilters.ts` and confirmed `prefs.ts`'s seam; our PR #30 + portal PR
-  #51 de-drifted `digest.ts`/`signalCard.ts` (open-issue #6), including a
-  genuine bug fix (portal's ticker-precedence code contradicted its own
-  documented intent) and porting portal's `dataQualityScore` field here; our
-  PR #32 adopted `lib/shared/signal-policy.ts` + `lib/shared/live-price.ts`
-  verbatim, closing the two-module share-debt portal PR #40 created (we have
-  the code but not yet the feature — see the matrix row below). Still owed:
-  portal PR #40's wider real-time signal tier (`signal-queue`, `signal_cache`
-  read-through, `/api/signals/drain` + `/live`) still has no mobile
-  counterpart, and portal PR #46 adds a fourth portal-only `lib/shared/` file
-  (`holdfold-map.ts`), not adoptable without first unifying our Hold/Fold
-  backend and verdict schema with the portal's.
+- **Feature-domain parity ≈ 76%** (was ~82%) — 9 of **12** shared product
+  domains work on both surfaces. Portal PRs #77/#78 added a 12th domain,
+  **Cookie consent / privacy rights**, a genuine cross-surface obligation
+  (GDPR/CPRA bind this app too) that exists on the portal only — counted as a
+  gap, not a portal-only bonus. The AI Council is still architecturally
+  divergent; Nu AI is still drifted. Unchanged by portal PR #40 (depth, not a
+  new domain).
+- **Single-source (code-identical) parity ≈ 40%** (was ~44%) — the denominator
+  grew faster than the numerator. Prior progress holds: our PR #29 ported
+  `parseSubscriptionMetadata()`; portal PR #50 reconciled `signalFilters.ts`
+  and confirmed `prefs.ts`'s seam; our PR #30 + portal PR #51 de-drifted
+  `digest.ts`/`signalCard.ts` (open-issue #6), including a real ticker-precedence
+  bug fix and porting portal's `dataQualityScore`; our PR #32 adopted
+  `signal-policy.ts` + `live-price.ts` verbatim. **Our PR #39 adopts a sixth
+  shared module — `lib/shared/attribution.ts`** (pure first-party acquisition
+  model: `nu_attrib` cookie, UTM/gclid/fbclid/referrer, hardened `parseTouch`),
+  byte-identical and drift-gated. But portal PRs #77/#78 added **three**
+  portal-only `lib/shared/` files in the same window — `consent.ts`,
+  `legal-consent.ts`, `attribution.ts` (the last now mirrored) — so portal
+  carries 16 shared modules to our 6. Still owed: portal PR #40's real-time
+  signal tier (`signal-queue`, `signal_cache`, `/api/signals/{drain,live}`) has
+  no mobile counterpart; `holdfold-map.ts` (portal PR #46) is not adoptable
+  without unifying the Hold/Fold backend first; and `consent.ts` /
+  `legal-consent.ts` are portable now and unclaimed ([[concept-sync-requirements]]
+  priority #1).
 
 The blended figure reached **~66%** on the four completed items of the
 original `/sync-pr` de-drift batch
 (`nuwrrrld-portal/docs/sync-pr-large-scale-run.md`) plus a fifth, follow-on
 item — adopting `signal-policy.ts`/`live-price.ts` — done once the drift gate
 made "adopt before it drifts" enforceable. It has since fallen to the current
-**~62%** as consent/DSAR shipped web-only (portal PRs #77/#78/#79), widening
-the feature-domain gap without any shared module drifting. The
-drift-detection CI gate now runs on **both** repos (our PR #33 added the job
-here; portal PR #52 added it there), covering 8 shared-core files. The portal
-still pulls ahead on the signal/Hold-Fold data plane; the risk lives in the
-gap between the two denominators.
+**~62%**: portal PRs #77/#78 shipped consent + DSAR web-only, widening the
+feature-domain gap and adding two unadopted shared modules, and our PR #39's
+`attribution.ts` adoption recovers only a sliver of single-source parity
+against that. No shared module has drifted — the CI drift gate (our PR #33 +
+portal PR #52) now covers **9** shared-core files including `attribution.ts`.
+The portal still pulls ahead on the signal/Hold-Fold data plane and now on
+compliance; the risk lives in the gap between the two denominators.
 
 > ℹ️ **Portal PR #91 (2026-08-31) assessed — portal-only bug fix, headline unchanged at ~62%.** The portal repaired its signal-card "Go Deeper" council call, which had rendered every success as an error since the four-field verdict migration (`/api/council` returns `{ verdict, ... }`; the caller still read `data.answer`). Adds a portal-only `lib/shared/councilErrors.ts` and edits the portal's `lib/shared/prompts.ts`. Nothing mobile-reachable: this repo has no `/api/council` caller and carries neither module, so no drift is introduced and no port is owed. See `nuwrrrld-portal/docs/wiki-portal/incident-2026-08-31-signals-go-deeper-contract-drift.md`. Neither denominator moves.
 
@@ -161,6 +170,9 @@ gap between the two denominators.
 | **Daily Brief / Market Briefing** | `BriefingScreen` — live council prompt from `getMarketOverview()` + `getMacroPulse()` + `getSignals()` | `/api/brief` — one-shot LLM completion grounded on scoped market data + Hold/Fold verdicts (portal PR #46) | none | 🔴 Divergent — different data (mobile: full sections + macro; portal: brief-only + verdicts), different output shape (council prose vs. 4-sentence structured brief) |
 | **Shared prefs** | `shared/prefs.ts` (SecureStore) | `shared/prefs.ts` (localStorage) | **byte-identical except the storage-backend seam** (confirmed, portal PR #50 assessment) | ✅ Aligned — same seam class as Auth SDK |
 | **Shared signal filters** | `shared/signalFilters.ts` (canonical) | `shared/signalFilters.ts` (portal PR #50) | **byte-identical except the import-path seam** (our `@/` alias is unconfigured — separate bug) | ✅ Synced — was 🟡 Partial (quote-style drift), reconciled by portal PR #50 |
+| **Cookie consent / privacy rights** | `analytics.ts` + `sentry.ts` run with **no consent gate** | `ConsentBanner`+`ConsentPreferences` in root layout, `nu_consent` cookie, `/api/consent`, `/api/legal-consent`, `LegalConsentGate` on sign-up (portal PRs #77/#78) | `lib/shared/consent.ts`, `lib/shared/legal-consent.ts` — **portal-only, portable now** (no backend/schema dep we lack; only the `prefs.ts` storage seam) | ⬅️ Portal-only — **required port**, not optional: GDPR/CPRA bind this app too ([[concept-sync-requirements]] priority #1) |
+| **Data-subject rights (DSAR)** | — | `/api/privacy/{export,profile,delete,rectify}`, `privacy_requests` statutory-clock ledger, rate-limited (portal PR #78) | none | ⬅️ Portal-only — **compliance asymmetry**: same account can exercise GDPR access/erasure/rectification on web, has no mechanism here |
+| **Attribution** | `lib/shared/attribution.ts` present, **unconsumed** | `lib/shared/attribution.ts`, `nu_attrib` cookie, `user_attribution` table, `/api/attribution`, `AttributionCapture` client (portal PRs #78/#81) | `lib/shared/attribution.ts` **byte-identical (our PR #39)** | 🟡 Partial — module shared + drift-gated; capture path still portal-only |
 | **Feedback** | `feedback.ts` | `/api/feedback` | none | 🟡 Present both, unshared |
 | **Push** | `pushNotifications.ts` | `/api/push` | none | 🟡 Present both, unshared |
 | **Referral / share** | `shareSheet.ts` | `/api/referral`, `dashboard/share` | none | 🟡 Present both, unshared |

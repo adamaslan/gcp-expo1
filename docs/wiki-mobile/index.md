@@ -49,7 +49,7 @@ Cross-cutting patterns and design philosophy.
 - [[concept-test-strategy]] — documents an absence: no test framework exists; what to build first and why
 - [[concept-free-tier-resilience]] — GCP infra free tiers (cost scales with cron, not users) and quota-vs-outage failure
 - [[concept-backend-is-source-of-truth]] — generate types from backend OpenAPI; never hand-mirror
-- [[concept-mobile-web-parity]] — how synced this app and the web portal are (~64%, 2026-08-07 after our PR #30 + portal PR #51) + full parity matrix
+- [[concept-mobile-web-parity]] — how synced this app and the web portal are (~62%, 2026-09-01 after portal PRs #77/#78 + our PR #39 — consent/DSAR web-only, attribution.ts mirrored) + full parity matrix
 - [[concept-sync-requirements]] — what each surface needs to reach parity (de-drift, port, converge)
 - [[concept-archive-not-delete]] — when docs/code go obsolete, move to archive, never `rm`
 - ~~[[concept-single-backend-assumption]]~~ — **resolved 2026-05-23** by PR #5; kept for historical context
