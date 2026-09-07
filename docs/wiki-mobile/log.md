@@ -284,3 +284,19 @@ Portal PR #66 changed `lib/digest.ts` web-only: `adaptLiveSignals` now derives `
 Adopts `lib/shared/attribution.ts` from portal `main` (portal PR #81) — the pure first-party acquisition model (`nu_attrib` cookie, UTM/gclid/fbclid/referrer, 90-day first-touch) with a `parseTouch` hardened against a tampered client cookie (`cleanKnownKeys` keeps only known string keys; `isValidTimestamp` guards `ts`). Byte-identical, registered `normalize: null` in `scripts/check-shared-drift.mjs` on both repos — 9 shared-core files gated now. Because portal already carried the file on `main`, the circular drift-gate stall did not occur; CI is green both sides. We now carry 6 of portal's 16 `lib/shared/` modules; single-source parity ~38% → ~40%. This ingest also finishes the reconciliation the 2026-08-31 headline resync left half-done: `concept-mobile-web-parity` gains Cookie-consent, DSAR and Attribution matrix rows, the feature-domain denominator drops to ≈76% (12 domains, consent web-only per portal PRs #77/#78), and the body narrative now matches the ~62% headline instead of the stale ~66% one. `concept-sync-requirements` §1 gains the `attribution.ts` (done) and `consent.ts`/`legal-consent.ts` (priority #1) rows; the priority list gains mobile consent adoption, an attribution-capture path, and a mobile DSAR path. No consumer wiring on mobile — the model is adopted, nothing captures a touch yet. Blended headline unchanged at ~62%.
 
 ## [2026-09-04] ingest | Our PR #43 fix(shared): port isCryptoShaped to signal-policy.ts (portal PR #101 parity) | pages touched: 3
+
+## [2026-09-07] ingest | PR #28 (prompt chips/signals workbench/watchlist/haptics/skeletons) closed unmerged — superseded feature-for-feature | pages touched: 1
+
+Rebased onto current `main` to check mergeability: every file the PR's code
+commit touched already existed on `main` with equal-or-greater functionality
+(prompt chips in `NuAIScreen.tsx`, search/filter/sort in `DigestScreen.tsx`
+via `lib/shared/signalFilters.ts`, `expo-haptics` wired throughout, skeleton
+loading in `StateView.tsx`, watchlist UI in `PortfolioScreen.tsx`) — all
+landed independently across our PRs #29–#43 in the six weeks after PR #28 was
+opened, per the ingest entries above. `git rebase` confirmed this mechanically:
+the feature commit and 3 of its 6 wiki-sync commits applied as empty patches
+and were dropped. The one real gap found during reconciliation — PR #28's
+`PortfolioScreen.tsx` predates the 204-empty-watchlist fix our PR #33 shipped,
+and would have **regressed** it had the PR been merged naively — is now
+recorded on `entity-portfolio.md`. Closed without merging; nothing of value
+was lost.

@@ -64,6 +64,16 @@ haptic feedback on outcome yet, only on the tap itself — see open questions).
   contract drift — gcp3 emits `ai_grade`/`ai_*` while `lib/portfolio.ts`
   expects `score`/`factors[]`/`summary`, and a missing score coerces to `0`,
   which would render **Grade F for every user** on this screen.
+- **A 204 health response (empty watchlist, nothing to score yet) rendered
+  "Health score unavailable" instead of "Add tickers to get scored"** —
+  fixed on `main` alongside the drift-gate CI job; `PortfolioScreen` now
+  branches on `watchlist.length === 0` before falling back to the
+  "unavailable" copy. PR #28's own copy of this screen predates that fix and
+  would have regressed it had the PR merged as-is. **Narrower than it first
+  looks**: `usePortfolio` only sets `error` when *all three* endpoints
+  (health/suggestions/watchlist) fail — a watchlist-only fetch failure still
+  resolves to `[]` and renders the same "empty" copy as a genuinely empty
+  list, indistinguishable from this fix's intended case.
 
 ## Open questions
 
