@@ -300,3 +300,5 @@ and were dropped. The one real gap found during reconciliation — PR #28's
 and would have **regressed** it had the PR been merged naively — is now
 recorded on `entity-portfolio.md`. Closed without merging; nothing of value
 was lost.
+
+## [2026-09-08] ingest | portal PR (pending) feat: GHA failure-notify + precompute-ai observability + Modal de-schedule | pages touched: 0 — portal-only CI/pipeline infra, no cross-surface feature; parity headline unchanged
