@@ -213,6 +213,33 @@ Legend: ✅ synced · 🟡 partial · 🔴 divergent · ⬅️ portal-only · �
 > deliberately different products (deep desktop deliberation vs. lightweight mobile
 > tap-in per [[concept-council-tap-in]])? Decision not recorded.
 
+> ℹ️ **Portal PR #123 (2026-09-11) assessed — headline unchanged at ~62%, two
+> new response-provenance headers, neither read here yet.**
+> `nuwrrrld-portal/docs/wiki-portal/decision-local-portfolio-scoring-over-upstream-wait.md`
+> and its sibling
+> `.../decision-local-signal-chat-over-missing-gcp3-agent.md` both close the same
+> shape of outage: a gcp3 route the portal called (`/api/portfolio/health`,
+> `/api/signals/{ticker}/chat`) was never actually deployed/registered, so the
+> portal now answers locally when upstream doesn't, upstream still tried first.
+>
+> **Free fix for us on one of the two.** `lib/usePortfolio.ts` already calls
+> `/api/portfolio/health`, so its panel goes from scoring against a route that
+> has never once succeeded (47-day outage, `nuwrrrld-portal/docs/wiki-portal/incident-2026-07-26-portfolio-health-endpoint-missing.md`)
+> to a working score, with zero change on our side — the same payoff every prior
+> single-source port has had. The signal-chat fix has no effect here yet: nothing
+> in this repo calls `/api/signals/{ticker}/chat`.
+>
+> **What we don't get for free is the label.** Both routes now emit
+> `X-Portfolio-Health-Source` / `X-Signal-Chat-Source` (`upstream` vs. `local`),
+> and we read neither — a locally-computed answer is indistinguishable from a
+> fresh gcp3 one on our side. Filed as a new gap class in
+> [[concept-sync-requirements]] (response-contract parity, not file identity) —
+> two instances now (health, chat) make it a pattern worth a permanent row, not
+> a one-off note.
+>
+> Neither denominator moves: no `lib/shared/` module changed, and a header is not
+> a shared module.
+
 ## Where it appears
 
 - Shared backbone: `lib/shared/` in both repos (only `sse.ts` is truly shared today)

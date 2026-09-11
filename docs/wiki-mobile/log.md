@@ -302,3 +302,5 @@ recorded on `entity-portfolio.md`. Closed without merging; nothing of value
 was lost.
 
 ## [2026-09-08] ingest | portal PR (pending) feat: GHA failure-notify + precompute-ai observability + Modal de-schedule | pages touched: 0 — portal-only CI/pipeline infra, no cross-surface feature; parity headline unchanged
+
+## [2026-09-11] ingest | portal PR #123 fix(portfolio): score health locally + nulogdash auth fix + 4 bugs found | pages touched: 2 — free fix for our Portfolio Health panel (usePortfolio.ts already calls the route); neither X-Portfolio-Health-Source nor X-Signal-Chat-Source is read here yet, filed as a new response-contract-parity gap class
