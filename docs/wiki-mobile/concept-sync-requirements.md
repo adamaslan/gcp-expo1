@@ -75,6 +75,31 @@ gate).
 | **Public council demo + share cards** (portal PR #43) | Portal-only by nature — a growth/marketing surface, not core product. If mobile ever wants an app-store-listing teaser or a deep-link share flow, copy the pattern: ticker-only input (no free text from anonymous callers), fail-closed quota, cache-then-quota ordering. |
 | **Daily Brief** (`/api/brief`, portal PR #46) | Grounded, structured (market overview + Hold/Fold verdicts), 4-sentence one-shot completion — cheap and fast (~0.5–1.3s to gather data) vs. our `BriefingScreen`'s full long-term council prompt. To offer this lighter format here we'd first need a Hold/Fold data source normalized to the portal's verdict shape (see §1's `holdfold-map.ts` row) — not a simple port. |
 
+### Response-contract parity — a new gap class, not yet in the table above
+
+**2026-09-11, from portal PR #123.** The portal's `/api/portfolio/health` now
+carries `X-Portfolio-Health-Source: upstream | local`, and its new
+`/api/signals/{ticker}/chat` carries `X-Signal-Chat-Source: upstream | local` —
+both name which path actually answered (gcp3, or the portal's own fallback
+computation) after gcp3's route for each turned out to be undeployed/unregistered.
+`lib/usePortfolio.ts` already calls the first endpoint and, as of this same PR,
+reads `X-Portfolio-Health-Source`; no caller here hits the second route yet, so
+`X-Signal-Chat-Source` remains unread.
+
+This does not move either denominator — no `lib/shared/` module changed, and
+`X-*-Source` is a header, not a shared function — but it is a real drift `npm
+run check:shared-drift` cannot see, because nothing about it is a file. The
+portal's own wiki flags the same shape twice now (health, then chat) and calls
+it a pattern: **the drift gate needs a notion of response-contract parity, not
+just file identity.**
+
+- ✅ `X-Portfolio-Health-Source` — closed in this same PR:
+  `usePortfolio.ts` reads it, `PortfolioScreen.tsx` shows a note when the
+  answer came from the portal's local fallback rather than gcp3.
+- ❓ `X-Signal-Chat-Source` — still open. If/when a per-ticker chat screen is
+  built here, read it from the start rather than adding it later, the same
+  gap class this entry exists to flag.
+
 ### Mobile-only performance note (not a port item)
 
 Our own `getMarketOverview()` (`lib/clients/gcp3.ts`) fetches `/market-overview`

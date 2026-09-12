@@ -11,7 +11,7 @@ import PaywallScreen from './PaywallScreen';
 export default function PortfolioScreen() {
   const { isLoading: subLoading } = useSubscription();
   const entitled = useEntitlement();
-  const { health, watchlist, isLoading, error, refetch, addToWatchlist, removeFromWatchlist } = usePortfolio();
+  const { health, healthSource, watchlist, isLoading, error, refetch, addToWatchlist, removeFromWatchlist } = usePortfolio();
   const [ticker, setTicker] = useState('');
   const [adding, setAdding] = useState(false);
 
@@ -59,6 +59,16 @@ export default function PortfolioScreen() {
             <Text style={styles.healthGrade}>{health.grade}</Text>
           </View>
           <Text style={styles.healthSummary}>{health.summary}</Text>
+          {healthSource === "local" && (
+            // Ported from the portal's PortfolioClient.tsx (portal PR #123):
+            // gcp3's own health endpoint has never been deployed, so a "local"
+            // score is the normal case, not degraded — but it's a different
+            // engine than gcp3's, and saying so is what closed a 47-day outage
+            // that looked identical to a working score on the other surface.
+            <Text style={styles.healthSourceNote}>
+              Computed by the portal signal engine from your watchlist&rsquo;s latest cards.
+            </Text>
+          )}
         </View>
       ) : watchlist.length === 0 ? (
         <Text style={styles.noHealth}>Add tickers to your watchlist to get your health score.</Text>
@@ -110,6 +120,7 @@ const styles = StyleSheet.create({
   healthScore: { fontSize: 32, fontWeight: '800', color: theme.text.primary },
   healthGrade: { fontSize: 18, fontWeight: '700', color: theme.accent.blue },
   healthSummary: { fontSize: 14, color: theme.text.secondary, lineHeight: 20 },
+  healthSourceNote: { fontSize: 12, color: theme.text.muted, marginTop: 6, fontStyle: 'italic' },
   noHealth: { fontSize: 13, color: theme.text.muted, marginBottom: 20 },
   sectionLabel: { fontSize: 12, fontWeight: '700', color: theme.text.muted, letterSpacing: 0.5, marginBottom: 8 },
   addRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },

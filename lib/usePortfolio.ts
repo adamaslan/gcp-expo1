@@ -4,8 +4,19 @@ import type { PortfolioHealth, OptimizerSuggestion, WatchlistItem } from './port
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
 
+/** Which path actually computed `health` — set from the portal's
+ *  `X-Portfolio-Health-Source` header. gcp3's own /api/portfolio/health has
+ *  never been deployed (nuwrrrld-portal/docs/wiki-portal/incident-2026-07-26-portfolio-health-endpoint-missing.md),
+ *  so the portal degrades to its own signal-engine score whenever upstream
+ *  doesn't answer, and names which path did on every response. Ported from
+ *  the portal's own app/dashboard/portfolio/PortfolioClient.tsx — see
+ *  concept-sync-requirements.md's "Response-contract parity" note (portal PR
+ *  #123): reading this header is the fix, the value was already free. */
+export type PortfolioHealthSource = "upstream" | "local";
+
 interface PortfolioState {
   health: PortfolioHealth | null;
+  healthSource: PortfolioHealthSource;
   suggestions: OptimizerSuggestion[];
   watchlist: WatchlistItem[];
   isLoading: boolean;
@@ -18,6 +29,7 @@ interface PortfolioState {
 export function usePortfolio(): PortfolioState {
   const { getToken, isSignedIn } = useAuth();
   const [health, setHealth] = useState<PortfolioHealth | null>(null);
+  const [healthSource, setHealthSource] = useState<PortfolioHealthSource>("upstream");
   const [suggestions, setSuggestions] = useState<OptimizerSuggestion[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +73,15 @@ export function usePortfolio(): PortfolioState {
         ]);
 
         if (!cancelled) {
-          if (hData) setHealth(hData);
+          // Explicit 204 branch: a 204 means the watchlist emptied out, not
+          // "health request failed" — the stale score from a prior fetch
+          // must not linger and render as if it were still current.
+          if (hRes.status === 204) setHealth(null);
+          else if (hData) setHealth(hData);
+          // Set from the response even on the 204/no-content path, so a
+          // stale "local" badge from a previous fetch doesn't linger once the
+          // watchlist empties out.
+          setHealthSource(hRes.headers.get("X-Portfolio-Health-Source") === "local" ? "local" : "upstream");
           setSuggestions(Array.isArray(sData) ? sData : []);
           setWatchlist(Array.isArray(wData) ? wData : []);
 
@@ -113,5 +133,5 @@ export function usePortfolio(): PortfolioState {
     }
   }, [getToken, watchlist]);
 
-  return { health, suggestions, watchlist, isLoading, error, refetch: () => setTick(t => t + 1), addToWatchlist, removeFromWatchlist };
+  return { health, healthSource, suggestions, watchlist, isLoading, error, refetch: () => setTick(t => t + 1), addToWatchlist, removeFromWatchlist };
 }
