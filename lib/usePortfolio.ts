@@ -73,7 +73,11 @@ export function usePortfolio(): PortfolioState {
         ]);
 
         if (!cancelled) {
-          if (hData) setHealth(hData);
+          // Explicit 204 branch: a 204 means the watchlist emptied out, not
+          // "health request failed" — the stale score from a prior fetch
+          // must not linger and render as if it were still current.
+          if (hRes.status === 204) setHealth(null);
+          else if (hData) setHealth(hData);
           // Set from the response even on the 204/no-content path, so a
           // stale "local" badge from a previous fetch doesn't linger once the
           // watchlist empties out.

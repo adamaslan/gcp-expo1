@@ -82,21 +82,23 @@ carries `X-Portfolio-Health-Source: upstream | local`, and its new
 `/api/signals/{ticker}/chat` carries `X-Signal-Chat-Source: upstream | local` —
 both name which path actually answered (gcp3, or the portal's own fallback
 computation) after gcp3's route for each turned out to be undeployed/unregistered.
-`lib/usePortfolio.ts` already calls the first endpoint and reads neither header;
-no caller here hits the second yet.
+`lib/usePortfolio.ts` already calls the first endpoint and, as of this same PR,
+reads `X-Portfolio-Health-Source`; no caller here hits the second route yet, so
+`X-Signal-Chat-Source` remains unread.
 
 This does not move either denominator — no `lib/shared/` module changed, and
 `X-*-Source` is a header, not a shared function — but it is a real drift `npm
 run check:shared-drift` cannot see, because nothing about it is a file. The
 portal's own wiki flags the same shape twice now (health, then chat) and calls
 it a pattern: **the drift gate needs a notion of response-contract parity, not
-just file identity.** Until this repo reads the header, a stale/locally-computed
-answer renders identically to a fresh gcp3 one on both surfaces.
+just file identity.**
 
-To close it: read `res.headers.get("X-Portfolio-Health-Source")` in
-`usePortfolio.ts` (the portal's own `PortfolioClient.tsx` already does this —
-copy the pattern) and, if/when a per-ticker chat screen is built here, do the
-same for `X-Signal-Chat-Source` from the start rather than adding it later.
+- ✅ `X-Portfolio-Health-Source` — closed in this same PR:
+  `usePortfolio.ts` reads it, `PortfolioScreen.tsx` shows a note when the
+  answer came from the portal's local fallback rather than gcp3.
+- ❓ `X-Signal-Chat-Source` — still open. If/when a per-ticker chat screen is
+  built here, read it from the start rather than adding it later, the same
+  gap class this entry exists to flag.
 
 ### Mobile-only performance note (not a port item)
 

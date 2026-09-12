@@ -229,13 +229,14 @@ Legend: ✅ synced · 🟡 partial · 🔴 divergent · ⬅️ portal-only · �
 > single-source port has had. The signal-chat fix has no effect here yet: nothing
 > in this repo calls `/api/signals/{ticker}/chat`.
 >
-> **What we don't get for free is the label.** Both routes now emit
-> `X-Portfolio-Health-Source` / `X-Signal-Chat-Source` (`upstream` vs. `local`),
-> and we read neither — a locally-computed answer is indistinguishable from a
-> fresh gcp3 one on our side. Filed as a new gap class in
-> [[concept-sync-requirements]] (response-contract parity, not file identity) —
-> two instances now (health, chat) make it a pattern worth a permanent row, not
-> a one-off note.
+> **The label wasn't free, but this PR paid for it — half of it.** Both routes
+> now emit `X-Portfolio-Health-Source` / `X-Signal-Chat-Source` (`upstream` vs.
+> `local`). `usePortfolio.ts` now reads the health one, so a locally-computed
+> score is labeled instead of rendering identically to a fresh gcp3 one; the
+> chat header stays unread since nothing here calls that route yet. Filed as a
+> new gap class in [[concept-sync-requirements]] (response-contract parity,
+> not file identity) — two instances now (health, chat) make it a pattern
+> worth a permanent row, not a one-off note.
 >
 > Neither denominator moves: no `lib/shared/` module changed, and a header is not
 > a shared module.
