@@ -67,6 +67,7 @@ gate).
 ### Portal has, mobile lacks
 | Feature | To sync mobile needs… |
 |---------|----------------------|
+| **Effective-tier overrides** ([[entity-billing]]) | We derive tier locally from `lib/subscription.ts` + Clerk metadata, so the portal's `resolveTier()` overrides never reach us — an allowlisted admin or beta tester is **Pro on web, Free here**. Fix is to have `useSubscription` read `GET /api/stripe/subscription` (already returns the override-aware tier) rather than porting `subscription-admin.ts`/`beta-testers.ts`, which would ship an email allowlist inside the app binary. New 2026-09-13; portal-side admin half dates to portal PR #119. Same invisible-to-`shared-drift-check` class as the provenance-header rows. |
 | **Backtest** | A mobile screen + a `clients/` call hitting the portal `/api/backtest/[symbol]`, or a decision that backtest stays web-only (heavier UI, desktop-first). |
 | **Watchlist store** | Confirm [[entity-portfolio|usePortfolio]]'s watchlist and the portal's `watchlist-store.ts` agree on shape and persistence; ideally share the store logic. |
 | **Hold/Fold cache** | Decide whether mobile should read the portal's cached verdicts or keep calling the holdemfoldem backend live. Today portal caches; mobile does not. |
