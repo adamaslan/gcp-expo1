@@ -164,7 +164,7 @@ compliance; the risk lives in the gap between the two denominators.
 | Domain | Mobile | Portal | Shared module | Status |
 |--------|--------|--------|---------------|--------|
 | **Auth (Clerk)** | `@clerk/clerk-expo` ([[entity-clerk-expo]]) | `@clerk/nextjs` | — (SDK differs by design) | ✅ Aligned — same provider + entitlement key |
-| **Subscription/billing** | `subscription.ts`, `PaywallScreen`, `useSubscription` ([[entity-billing]]) | `subscription.ts`, `stripe.ts`, `dashboard/billing` | `lib/subscription.ts` **byte-identical (our PR #29)** | ✅ Synced — re-synced after portal PR #45 drift |
+| **Subscription/billing** | `subscription.ts`, `PaywallScreen`, `useSubscription` ([[entity-billing]]) | `subscription.ts`, `stripe.ts`, `dashboard/billing`; portal-only `subscription-admin.ts` + `beta-testers.ts` | `lib/subscription.ts` **byte-identical (our PR #29)** | 🟡 Code synced, **effective tier diverges** — admins and beta testers are Pro on web, Free here (2026-09-13) |
 | **Retention** | `retention.ts`, `useStreak`, `TrialExpiryBanner` ([[entity-retention]]) | `retention.ts`, `/api/retention` | `lib/retention.ts` **identical** | ✅ Synced |
 | **Portfolio** | `portfolio.ts`, `PortfolioScreen`, `usePortfolio` ([[entity-portfolio]]) | `portfolio.ts`, `/api/portfolio`, `dashboard/portfolio` | `lib/portfolio.ts` **identical** | ✅ Synced |
 | **SSE transport** | `shared/sse.ts` | `shared/sse.ts` | **identical** | ✅ Synced |
@@ -247,6 +247,31 @@ Legend: ✅ synced · 🟡 partial · 🔴 divergent · ⬅️ portal-only · �
 - Identical logic modules: `lib/subscription.ts`, `lib/retention.ts`, `lib/portfolio.ts`
 - The `nuwrrrld-fullstack` skill exists specifically to single-source cross-surface
   business logic and keep Clerk parity — the mechanism this page measures.
+
+> ⚠️ **Portal beta-tester Pro allowlist (2026-09-13) assessed — headline
+> unchanged at ~62%, and the third instance of the response-contract blind spot
+> recorded above.** The portal added `lib/beta-testers.ts`, resolving an
+> allowlisted Clerk primary-verified address to `pro` inside its `resolveTier()`
+> — beta testers exercise every Pro feature with no Stripe subscription. It sits
+> in portal-only `lib/subscription-admin.ts`, so `lib/subscription.ts` stays
+> byte-identical with ours and neither denominator moves.
+>
+> **The matrix row still moved ✅ → 🟡.** We derive tier ourselves from
+> `lib/subscription.ts` + Clerk metadata and know nothing about either override
+> list (the admin one, from portal PR #119, has the same effect and was never
+> ingested here — this entry backfills it). The same signed-in beta tester is
+> therefore **Pro on web and Free in this app**. Nothing CI can see: no shared
+> file drifted, and the divergence lives in a portal file that is correctly
+> portal-only.
+>
+> **Unlike portfolio health, this is not a free fix.** Portal-owned logic reaches
+> us for free only where we call a portal *route*; tier resolution is local. The
+> cheap path is `useSubscription` reading `GET /api/stripe/subscription`, which
+> already returns the override-aware tier — not porting the override modules,
+> which would put an email allowlist in a shipped binary. Filed in
+> [[concept-sync-requirements]].
+>
+> Mirrored from `nuwrrrld-portal/docs/wiki-portal/concept-mobile-web-parity.md`.
 
 ## See also
 

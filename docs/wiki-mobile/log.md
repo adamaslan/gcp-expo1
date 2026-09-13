@@ -304,3 +304,5 @@ was lost.
 ## [2026-09-08] ingest | portal PR (pending) feat: GHA failure-notify + precompute-ai observability + Modal de-schedule | pages touched: 0 — portal-only CI/pipeline infra, no cross-surface feature; parity headline unchanged
 
 ## [2026-09-11] ingest | portal PR #123 fix(portfolio): score health locally + nulogdash auth fix + 4 bugs found | pages touched: 2 — free fix for our Portfolio Health panel (usePortfolio.ts already calls the route); this same PR also reads X-Portfolio-Health-Source, only X-Signal-Chat-Source remains unread, filed as a new response-contract-parity gap class
+
+## [2026-09-13] ingest | portal beta-tester Pro allowlist | pages touched: 2 — portal-only resolveTier() override; our tier stays Stripe-derived, so allowlisted testers/admins are Pro on web and Free here; fix is reading GET /api/stripe/subscription, filed in concept-sync-requirements
