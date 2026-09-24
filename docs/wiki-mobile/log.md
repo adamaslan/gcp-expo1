@@ -307,4 +307,6 @@ was lost.
 
 ## [2026-09-13] ingest | portal beta-tester Pro allowlist | pages touched: 2 — portal-only resolveTier() override; our tier stays Stripe-derived, so allowlisted testers/admins are Pro on web and Free here; fix is reading GET /api/stripe/subscription, filed in concept-sync-requirements
 
+## [2026-09-24] ingest | PR #47 feat: adopt shared consent model, gate analytics + sentry | pages touched: 2
+
 ## [2026-09-26] ingest | mobile fix/holdfold-fib-type — FibLevel type matches backend | pages touched: 1
