@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { AuthProvider } from '@/lib/auth-provider';
 import { validateConfig } from '@/lib/config-validator';
+import { ConsentSheet } from '@/components/ConsentSheet';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -90,6 +91,7 @@ export default function RootLayout() {
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
         <AuthProvider>
           <AuthGuard />
+          <ConsentSheet />
         </AuthProvider>
       </ClerkProvider>
     </SafeAreaProvider>

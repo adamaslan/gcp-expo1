@@ -8,7 +8,13 @@
  *
  * Backend: wire to PostHog or Amplitude by implementing the `_send` function.
  * EXPO_PUBLIC_POSTHOG_KEY / NEXT_PUBLIC_POSTHOG_KEY selects the project.
+ *
+ * Consent-gated: nothing is sent (and PostHog is never constructed) unless the
+ * shared consent record grants `analytics`. Revoking consent resets identity.
  */
+
+import { isAllowed } from './shared/consent';
+import { getConsent, onConsentChange } from './consent-store';
 
 export type AnalyticsEvent =
   | { name: 'signup';             props: { method: 'email' | 'google' | 'apple' } }
@@ -30,7 +36,12 @@ type EventProps<N extends EventName> = Extract<AnalyticsEvent, { name: N }>['pro
 // null = tried and failed/unavailable; undefined = not yet attempted
 let _posthog: unknown | null = undefined;
 
+function analyticsAllowed(): boolean {
+  return isAllowed(getConsent(), 'analytics');
+}
+
 function getPosthog() {
+  if (!analyticsAllowed()) return null;
   if (_posthog !== undefined) return _posthog;  // return cached result (even null)
   try {
     const key = process.env.EXPO_PUBLIC_POSTHOG_KEY;
@@ -47,6 +58,7 @@ function getPosthog() {
 
 /** Track an analytics event. Typed — wrong event names or missing props are compile errors. */
 export function track<N extends EventName>(name: N, props: EventProps<N>): void {
+  if (!analyticsAllowed()) return;
   const ph = getPosthog() as { capture: (n: string, p: unknown) => void } | null;
   if (ph) {
     ph.capture(name, props);
@@ -67,3 +79,9 @@ export function reset(): void {
   const ph = getPosthog() as { reset: () => void } | null;
   ph?.reset();
 }
+
+// Revoking analytics consent drops the pseudonymous identity immediately.
+onConsentChange((record) => {
+  if (isAllowed(record, 'analytics') || !_posthog) return;
+  (_posthog as { reset: () => void }).reset();
+});
