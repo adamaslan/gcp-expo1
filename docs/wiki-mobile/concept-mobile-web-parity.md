@@ -159,6 +159,8 @@ compliance; the risk lives in the gap between the two denominators.
 
 > ℹ️ **Portal PR #91 (2026-08-31) assessed — portal-only bug fix, headline unchanged at ~62%.** The portal repaired its signal-card "Go Deeper" council call, which had rendered every success as an error since the four-field verdict migration (`/api/council` returns `{ verdict, ... }`; the caller still read `data.answer`). Adds a portal-only `lib/shared/councilErrors.ts` and edits the portal's `lib/shared/prompts.ts`. Nothing mobile-reachable: this repo has no `/api/council` caller and carries neither module, so no drift is introduced and no port is owed. See `nuwrrrld-portal/docs/wiki-portal/incident-2026-08-31-signals-go-deeper-contract-drift.md`. Neither denominator moves.
 
+> ℹ️ **Mobile PR fix/holdfold-fib-type (2026-09-26) assessed — mobile type fix only, headline unchanged at ~62%.** `clients/holdfold.ts` now declares the Fibonacci response the backend actually sends (`FibLevel { name, price, distance_pct, strength, type }`, `fib_confluence_zones`, `nearest_fib_support/resistance`), replacing `{ level, price }` whose `level` never arrived. Nothing in the mobile app reads these fields yet, so no behavior changed. Mobile and portal now agree on the *type*; the portal's `lib/shared/fib-levels.ts` (portal PR #185) is deliberately not copied into mobile until that PR merges, since the drift gate compares against the other repo's `main`. No denominator moves.
+
 ## Domain parity matrix
 
 | Domain | Mobile | Portal | Shared module | Status |

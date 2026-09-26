@@ -22,9 +22,22 @@ export interface TopSignal {
   strength: string;
 }
 
+// Mirrors holdemfoldemapp backend/core.py FibLevel / fib_confluence_zones.
+// Same shape as the portal's lib/shared/fib-levels.ts (the older `{ level, price }`
+// here never matched what the backend sends, so `level` was always undefined).
 export interface FibLevel {
-  level: string;
+  name: string;
   price: number;
+  distance_pct: number;
+  strength: string;
+  type: string;
+}
+
+export interface FibConfluenceZone {
+  price: number;
+  strength: string;
+  signal_count: number;
+  confluence_score: number;
 }
 
 export interface OptionsStrategySummary {
@@ -51,6 +64,9 @@ export interface HoldFoldVerdict {
   current_price?: number;
   position_pnl?: number;
   fib_levels?: FibLevel[];
+  fib_confluence_zones?: FibConfluenceZone[];
+  nearest_fib_support?: number | null;
+  nearest_fib_resistance?: number | null;
   options_strategy?: OptionsStrategySummary;
   reasoning?: string;
   cached?: boolean;
