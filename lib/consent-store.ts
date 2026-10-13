@@ -9,6 +9,7 @@
  * non-necessary category is DENIED (isAllowed fails safe on null).
  */
 import { useEffect, useState } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import {
   CONSENT_COOKIE,
   needsPrompt,
@@ -16,7 +17,7 @@ import {
   serializeConsent,
   type ConsentRecord,
 } from './shared/consent';
-import { getPref, setPref } from './shared/prefs';
+import { getPref } from './shared/prefs';
 
 type Listener = (record: ConsentRecord | null) => void;
 
@@ -24,6 +25,7 @@ let current: ConsentRecord | null = null;
 let loaded = false;
 let loading: Promise<ConsentRecord | null> | null = null;
 const listeners = new Set<Listener>();
+let saving: Promise<void> = Promise.resolve();
 
 function notify(): void {
   for (const listener of listeners) listener(current);
@@ -49,10 +51,19 @@ export function loadConsent(): Promise<ConsentRecord | null> {
 
 /** Persist a choice made via buildConsent/acceptAll/rejectAll and broadcast it. */
 export async function saveConsent(record: ConsentRecord): Promise<void> {
-  current = record;
-  loaded = true;
-  notify();
-  await setPref(CONSENT_COOKIE, serializeConsent(record));
+  const operation = saving.then(async () => {
+    // Finish any initial read before it can restore a prior grant over a choice.
+    await loadConsent();
+    current = null;
+    loaded = true;
+    notify();
+    // Consent writes must propagate storage errors; ordinary prefs stay best-effort.
+    await SecureStore.setItemAsync(CONSENT_COOKIE, serializeConsent(record));
+    current = record;
+    notify();
+  });
+  saving = operation.catch(() => undefined);
+  return operation;
 }
 
 export function onConsentChange(listener: Listener): () => void {

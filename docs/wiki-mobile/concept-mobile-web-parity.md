@@ -166,7 +166,7 @@ compliance; the risk lives in the gap between the two denominators.
 | Domain | Mobile | Portal | Shared module | Status |
 |--------|--------|--------|---------------|--------|
 | **Auth (Clerk)** | `@clerk/clerk-expo` ([[entity-clerk-expo]]) | `@clerk/nextjs` | — (SDK differs by design) | ✅ Aligned — same provider + entitlement key |
-| **Subscription/billing** | `subscription.ts`, `PaywallScreen`, `useSubscription` ([[entity-billing]]) | `subscription.ts`, `stripe.ts`, `dashboard/billing`; portal-only `subscription-admin.ts` + `beta-testers.ts` | `lib/subscription.ts` **byte-identical (our PR #29)** | 🟡 Code synced, **effective tier diverges** — admins and beta testers are Pro on web, Free here (2026-09-13) |
+| **Subscription/billing** | `subscription.ts`, `PaywallScreen`, `useSubscription` ([[entity-billing]]) | `subscription.ts`, `stripe.ts`, `dashboard/billing`; portal-only `subscription-admin.ts` + `beta-testers.ts` | `lib/subscription.ts` **byte-identical (our PR #29)** | ✅ Admin and beta overrides reach mobile through the effective tier returned by `/api/subscription/tier`; override administration remains portal-only (verified in the effective-tier row) |
 | **Retention** | `retention.ts`, `useStreak`, `TrialExpiryBanner` ([[entity-retention]]) | `retention.ts`, `/api/retention` | `lib/retention.ts` **identical** | ✅ Synced |
 | **Portfolio** | `portfolio.ts`, `PortfolioScreen`, `usePortfolio` ([[entity-portfolio]]) | `portfolio.ts`, `/api/portfolio`, `dashboard/portfolio` | `lib/portfolio.ts` **identical** | ✅ Synced |
 | **SSE transport** | `shared/sse.ts` | `shared/sse.ts` | **identical** | ✅ Synced |

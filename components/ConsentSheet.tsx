@@ -13,13 +13,17 @@ import { syncSentryWithConsent } from '../lib/sentry';
 export function ConsentSheet() {
   const { shouldPrompt } = useConsent();
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => syncSentryWithConsent(), []);
 
   async function choose(build: typeof acceptAll) {
     setSaving(true);
+    setError(null);
     try {
       await saveConsent(build());
+    } catch {
+      setError('Your choice could not be saved. Optional tracking is off. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -32,7 +36,7 @@ export function ConsentSheet() {
           <Text style={styles.title}>Your privacy choices</Text>
           <ScrollView style={styles.body}>
             <Text style={styles.intro}>
-              We only use what is strictly necessary unless you say otherwise. You can change this later.
+              We only use what is strictly necessary unless you say otherwise.
             </Text>
             {CONSENT_CATEGORIES.map((category) => (
               <View key={category} style={styles.row}>
@@ -40,10 +44,15 @@ export function ConsentSheet() {
                   {CATEGORY_INFO[category].label}
                   {CATEGORY_INFO[category].required ? ' (always on)' : ''}
                 </Text>
-                <Text style={styles.description}>{CATEGORY_INFO[category].description}</Text>
+                <Text style={styles.description}>
+                  {category === 'strictly_necessary'
+                    ? 'Keeps you signed in and securely stores the settings the app needs to work. These cannot be turned off.'
+                    : CATEGORY_INFO[category].description}
+                </Text>
               </View>
             ))}
           </ScrollView>
+          {error ? <Text accessibilityRole="alert" style={styles.description}>{error}</Text> : null}
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.button}
