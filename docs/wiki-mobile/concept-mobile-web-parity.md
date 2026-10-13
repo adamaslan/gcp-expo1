@@ -1,5 +1,5 @@
 ---
-date: 2026-10-12
+date: 2026-10-13
 type: concept
 tags: [sync, parity, mobile, web, cross-surface, shared]
 sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrrrld-portal/app, nuwrrrld-portal/app/dashboard/page.tsx, nuwrrrld-portal/app/page.tsx]
@@ -10,6 +10,8 @@ sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrr
 Companion page: [[concept-sync-requirements]] — the concrete work each surface
 needs to close the gap. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-mobile-web-parity.md`.
+
+> ℹ️ **Portal PRs #261–#272 (2026-10-13) assessed — portal-only changes, headline unchanged at ~62%.** A drain of the portal PR queue: a paper-arena comparison page (with nav links and a real last-run status for paper portfolios), a `/api/health` check that flags a placeholder Stripe webhook secret, lighter data loading on the dashboard and homepage, the CI alert lifecycle (deduplicated issues, closed on recovery, optional push), plus a skipped malformed-digest e2e case, agent-tier docs, a model-usage report and a free-model chain refresh. No `lib/shared/` module changed, so the feature-domain matrix and its denominator did not move. The arena page extends the paper-trading domain on the web only; porting it to mobile is optional and creates no new sync requirement. Each PR had a static review by a second model; none were verified on a deployed environment.
 
 ## The pattern
 
