@@ -1,6 +1,8 @@
 # Wiki Index — gcp3-mobile
 
-_Last updated: 2026-08-08 (our PR #32 + our PR #33 + portal PR #52 — signal-policy.ts/live-price.ts adopted, drift-gate CI on both repos; parity headline ~64%→~66%)_
+_Last updated: 2026-10-12 (portal dashboard/homepage slowness assessment; parity metrics unchanged for this change)_
+
+**2026-10-12 portal slowness assessment:** portal `app/dashboard/page.tsx` now requests `/market-overview?sections=brief`, and `app/page.tsx` bounds its optional council sample fetch at 5 seconds. No feature domain or shared module is added, removed, or edited; no interactive council budget changes. For this change, the existing domain matrix and recorded feature-domain ≈76%, code-identical ≈40%, blended ~62% figures remain unchanged. This is a scoped change assessment, not a fresh audit of all shared modules. Mobile’s existing full-overview briefing and council implementation remain separate; no new mobile port or de-drift item is introduced. See [[concept-mobile-web-parity]] and [[concept-sync-requirements]].
 
 Catalog is organized by page type. Read `index.md` first on any query to find relevant pages, then drill in. For the philosophy behind this wiki pattern, see [[ORIGIN]].
 
