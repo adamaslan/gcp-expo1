@@ -21,6 +21,19 @@ const LEGAL_RETRY_BASE_MS = 1_000; // 1s, 2s, 4s, 8s between attempts
  * generation may write the last-synced marker.
  */
 let generation = 0;
+/** Clerk user id as of the latest render (synchronous; the effect lags a render behind). */
+let liveUserId: string | null = null;
+const retryTimers = new Set<ReturnType<typeof setTimeout>>();
+
+function cancelRetryTimers(): void {
+  for (const timer of retryTimers) clearTimeout(timer);
+  retryTimers.clear();
+}
+
+/** A send is valid only for its own generation AND while this user is still the signed-in one. */
+function guardFor(gen: number, userId: string): () => boolean {
+  return () => gen === generation && liveUserId === userId;
+}
 let chain: Promise<void> = Promise.resolve();
 function enqueue(gen: number, task: () => Promise<void>): void {
   chain = chain
@@ -38,15 +51,16 @@ async function sendLegal(gen: number, userId: string, token: GetToken, allowBind
   if (gen !== generation) return;
   const bound = (allowBind ? await bindFreshPendingLegalConsent(userId) : null) ?? (await readBoundLegalConsent(userId));
   if (!bound || gen !== generation) return;
-  if (await syncLegalConsent(token)) {
+  if (await syncLegalConsent(token, guardFor(gen, userId))) {
     await clearBoundLegalConsent(userId, bound.nonce);
     return;
   }
   if (attempt >= LEGAL_MAX_ATTEMPTS) return;
-  setTimeout(
-    () => enqueue(gen, () => sendLegal(gen, userId, token, false, attempt + 1)),
-    LEGAL_RETRY_BASE_MS * 2 ** (attempt - 1),
-  );
+  const timer = setTimeout(() => {
+    retryTimers.delete(timer);
+    enqueue(gen, () => sendLegal(gen, userId, token, false, attempt + 1));
+  }, LEGAL_RETRY_BASE_MS * 2 ** (attempt - 1));
+  retryTimers.add(timer);
 }
 
 async function sendLatestRecord(gen: number, userId: string, token: GetToken): Promise<void> {
@@ -54,7 +68,7 @@ async function sendLatestRecord(gen: number, userId: string, token: GetToken): P
   if (!record || gen !== generation) return;
   const marker = `${userId}|${record.ts}`;
   if ((await getPref(SYNCED_KEY)) === marker) return;
-  if (!(await syncConsentRecord(record, token))) return;
+  if (!(await syncConsentRecord(record, token, guardFor(gen, userId)))) return;
   if (gen === generation) await setPref(SYNCED_KEY, marker);
 }
 
@@ -70,6 +84,7 @@ export function usePortalConsentSync(): void {
   const getTokenRef = useRef(getToken);
   getTokenRef.current = getToken;
   const previousUser = useRef<string | null>(null);
+  liveUserId = isSignedIn && userId ? userId : null;
 
   useEffect(() => {
     const current = isSignedIn && userId ? userId : null;
@@ -78,6 +93,7 @@ export function usePortalConsentSync(): void {
 
     if (previous !== current) {
       generation += 1; // supersede anything queued or about to start
+      cancelRetryTimers();
       // Sign-out, or A -> B: the pending acceptance belongs to no one now.
       if (previous !== null) void clearPendingLegalConsent();
     }
@@ -95,6 +111,8 @@ export function usePortalConsentSync(): void {
     const unsubscribe = onConsentChange(() => enqueue(gen, () => sendLatestRecord(gen, current, token)));
     return () => {
       unsubscribe();
+      generation += 1; // unmount / re-run: nothing from this instance may post afterwards
+      cancelRetryTimers();
     };
   }, [isSignedIn, userId]);
 }

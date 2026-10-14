@@ -21,7 +21,12 @@ export type GetToken = () => Promise<string | null>;
 /** A stalled request must not block the serialized sync queue behind it. */
 export const REQUEST_TIMEOUT_MS = 10_000;
 
-async function postJson(path: string, body: unknown, getToken: GetToken): Promise<boolean> {
+/** Returns true while the send is still valid (same user, same sync generation). */
+export type SendGuard = () => boolean;
+
+async function postJson(path: string, body: unknown, getToken: GetToken, stillValid: SendGuard): Promise<boolean> {
+  // Checked before AND after the token await so a token for another account is never used.
+  if (!stillValid()) return false;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -29,7 +34,7 @@ async function postJson(path: string, body: unknown, getToken: GetToken): Promis
       getToken(),
       new Promise<null>((resolve) => controller.signal.addEventListener('abort', () => resolve(null))),
     ]);
-    if (!token) return false;
+    if (!token || !stillValid()) return false;
     const res = await fetch(`${PORTAL_URL}${path}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -50,12 +55,12 @@ async function postJson(path: string, body: unknown, getToken: GetToken): Promis
 }
 
 /** Returns true when the portal accepted the record. */
-export function syncConsentRecord(record: ConsentRecord, getToken: GetToken): Promise<boolean> {
+export function syncConsentRecord(record: ConsentRecord, getToken: GetToken, stillValid: SendGuard): Promise<boolean> {
   const { preferences, analytics, marketing } = record.choices;
-  return postJson('/api/consent', { choices: { preferences, analytics, marketing }, source: record.source }, getToken);
+  return postJson('/api/consent', { choices: { preferences, analytics, marketing }, source: record.source }, getToken, stillValid);
 }
 
 /** Returns true when the portal recorded the current ToS + Privacy acceptance. */
-export function syncLegalConsent(getToken: GetToken): Promise<boolean> {
-  return postJson('/api/legal-consent', { surface: SURFACE }, getToken);
+export function syncLegalConsent(getToken: GetToken, stillValid: SendGuard): Promise<boolean> {
+  return postJson('/api/legal-consent', { surface: SURFACE }, getToken, stillValid);
 }
