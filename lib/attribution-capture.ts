@@ -26,6 +26,7 @@
  * The token is never logged.
  */
 import * as Linking from 'expo-linking';
+import * as SecureStore from 'expo-secure-store';
 import {
   ATTRIB_COOKIE,
   ATTRIB_COOKIE_MAX_AGE,
@@ -36,7 +37,8 @@ import {
   serialiseTouch,
   type AttributionTouch,
 } from './shared/attribution';
-import { CONSENT_COOKIE, isAllowed, serializeConsent, type ConsentRecord } from './shared/consent';
+import { CONSENT_COOKIE, isAllowed, serializeConsent } from './shared/consent';
+import { getConsent } from './consent-store';
 import { getPref, setPref } from './shared/prefs';
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
@@ -68,19 +70,40 @@ async function readStoredTouch(now: Date): Promise<AttributionTouch | null> {
   return touch;
 }
 
+function analyticsGranted(): boolean {
+  return isAllowed(getConsent(), 'analytics');
+}
+
+/** Delete the persisted touch and sent flag (consent revoked). Never throws. */
+export async function clearAttributionState(): Promise<void> {
+  for (const key of [ATTRIB_COOKIE, SENT_KEY]) {
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {
+      /* best-effort */
+    }
+  }
+}
+
 /**
  * Persist `candidate` as first-touch unless a live (<90 day) one exists.
- * Caller must have verified analytics consent. Returns the effective first touch.
+ * Consent is re-read right before the write and again after it (a revocation
+ * during the awaits wipes what was just written). Returns the effective first touch.
  */
 export async function persistFirstTouch(
   candidate: AttributionTouch | null,
   now: Date = new Date(),
 ): Promise<AttributionTouch | null> {
+  if (!analyticsGranted()) return null;
   const existing = await readStoredTouch(now);
   if (existing) return existing;
-  if (!candidate) return null;
+  if (!candidate || !analyticsGranted()) return null;
   await setPref(ATTRIB_COOKIE, serialiseTouch(candidate));
   await setPref(SENT_KEY, '0'); // new first touch -> not yet reported
+  if (!analyticsGranted()) {
+    await clearAttributionState();
+    return null;
+  }
   return candidate;
 }
 
@@ -92,20 +115,25 @@ function queryOf(touch: AttributionTouch): string {
 }
 
 /**
- * POST the stored first touch once. Requires a Clerk token and a granted
- * analytics consent record; both re-checked here. Never throws.
+ * POST the stored first touch once. Requires a non-empty Clerk token and granted
+ * analytics consent, re-read after every await and immediately before fetch.
+ * Marked "sent" only on a 200 whose body is `{ok:true, captured:true}` while a
+ * bearer token was sent. Caveat: the portal route returns that same 200 even when
+ * its auth() resolves no user (it then skips the DB insert), so "sent" means "the
+ * server accepted a token-bearing request", not a proven row; unverified against
+ * the deployed portal. 204 (no consent seen server-side) and everything else retry
+ * next launch. Never throws; nothing sensitive is logged.
  */
-export async function reportFirstTouch(
-  getToken: () => Promise<string | null>,
-  consent: ConsentRecord | null,
-): Promise<void> {
-  if (!isAllowed(consent, 'analytics') || !consent) return;
+export async function reportFirstTouch(getToken: () => Promise<string | null>): Promise<void> {
+  if (!analyticsGranted()) return;
   try {
     if ((await getPref(SENT_KEY)) === '1') return;
     const touch = await readStoredTouch(new Date());
     if (!touch) return;
     const token = await getToken();
     if (!token) return;
+    const consent = getConsent(); // fresh, after all awaits
+    if (!consent || !isAllowed(consent, 'analytics')) return;
     const res = await fetch(`${PORTAL_URL}/api/attribution`, {
       method: 'POST',
       credentials: 'omit',
@@ -116,8 +144,12 @@ export async function reportFirstTouch(
       },
       body: JSON.stringify({ query: queryOf(touch), referrer: touch.referrer ?? '', landing_path: touch.landing_path }),
     });
-    if (res.status === 200) await setPref(SENT_KEY, '1');
+    if (res.status !== 200) return;
+    const body: unknown = await res.json().catch(() => null);
+    const accepted = !!body && typeof body === 'object' && (body as { ok?: unknown; captured?: unknown }).ok === true
+      && (body as { captured?: unknown }).captured === true;
+    if (accepted && analyticsGranted()) await setPref(SENT_KEY, '1');
   } catch {
-    // Best-effort: a lost report retries next launch. Nothing logged (token safety).
+    // Best-effort: a lost report retries next launch.
   }
 }
