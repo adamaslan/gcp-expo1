@@ -3,7 +3,8 @@ import { AppState, AppStateStatus } from 'react-native';
 import * as SecureStore from './secure-storage';
 import { useAuth as useClerkAuth, useUser, useSession } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { DELETED_PENDING_SIGNOUT_KEY, SESSION_CACHE_KEY, TOKEN_CACHE_KEY } from './auth-constants';
+import { SESSION_CACHE_KEY, TOKEN_CACHE_KEY } from './auth-constants';
+import { readPendingSignOutFlag, writePendingSignOutFlag } from './pending-signout-flag';
 
 interface AuthContextType {
   isLoaded: boolean;
@@ -18,7 +19,8 @@ interface AuthContextType {
    * when signOut succeeds.
    */
   accountDeletedPendingSignOut: boolean;
-  setAccountDeletedPendingSignOut: (pending: boolean) => void;
+  /** Resolves once persistence has been attempted; the in-memory block applies immediately. */
+  setAccountDeletedPendingSignOut: (pending: boolean) => Promise<void>;
   retry: (fn: () => Promise<void>) => Promise<void>;
 }
 
@@ -38,18 +40,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Unknown until the persisted flag is read; keeps the signed-in shell from flashing.
   const [pendingFlagLoaded, setPendingFlagLoaded] = useState(false);
 
-  function setAccountDeletedPendingSignOut(pending: boolean) {
-    setPendingState(pending);
-    const write = pending
-      ? SecureStore.setItemAsync(DELETED_PENDING_SIGNOUT_KEY, '1')
-      : SecureStore.deleteItemAsync(DELETED_PENDING_SIGNOUT_KEY);
-    write.catch((err) => console.warn('Failed to persist deletion sign-out flag:', err));
+  const pendingRef = useRef(false);
+  const flagPersisted = useRef(false);
+
+  async function persistFlag(pending: boolean): Promise<void> {
+    try {
+      await writePendingSignOutFlag(pending);
+      flagPersisted.current = true;
+    } catch (err) {
+      // The in-memory block still holds for this session; the write is retried on the next signOut().
+      flagPersisted.current = false;
+      console.warn('Failed to persist deletion sign-out flag:', err);
+    }
+  }
+
+  async function setAccountDeletedPendingSignOut(pending: boolean): Promise<void> {
+    pendingRef.current = pending;
+    setPendingState(pending); // block THIS session immediately, before persistence resolves
+    await persistFlag(pending);
   }
 
   useEffect(() => {
-    SecureStore.getItemAsync(DELETED_PENDING_SIGNOUT_KEY)
-      .then((value) => setPendingState(value === '1'))
-      .catch((err) => console.warn('Failed to read deletion sign-out flag:', err))
+    readPendingSignOutFlag()
+      .then((value) => {
+        pendingRef.current = value;
+        flagPersisted.current = value;
+        setPendingState(value);
+      })
+      .catch((err) => {
+        // Read FAILURE is deliberately treated as "not pending". Trapping a normal user whose
+        // storage is flaky is worse: the portal deletes the Clerk user last, so a retained
+        // session of a deleted account is already invalid server-side and every API call 401s.
+        console.warn('Failed to read deletion sign-out flag; treating as not pending:', err);
+      })
       .finally(() => setPendingFlagLoaded(true));
   }, []);
   const prevSessionStatus = useRef<string | null>(null);
@@ -133,9 +156,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   async function signOut() {
+    // Retry pressed after a failed persist: try to record the flag again before signing out.
+    if (pendingRef.current && !flagPersisted.current) await persistFlag(true);
     try {
       await clerkSignOut();
-      setAccountDeletedPendingSignOut(false);
+      await setAccountDeletedPendingSignOut(false);
     } finally {
       // If Clerk's signOut throws after an account deletion, the Clerk session is
       // already invalid server-side (the portal deletes the Clerk user last, after

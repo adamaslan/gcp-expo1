@@ -198,7 +198,7 @@ export default function PrivacyScreen({ onClose }: Props) {
       } catch (signOutErr) {
         console.warn('Sign-out after account deletion failed:', signOutErr);
         // Lifted into the auth context so the block outlives this screen; never re-deletes.
-        setAccountDeletedPendingSignOut(true);
+        await setAccountDeletedPendingSignOut(true);
         return;
       }
       if (!result.clerk_account_deleted) {
