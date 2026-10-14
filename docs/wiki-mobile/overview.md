@@ -16,7 +16,7 @@ An Expo / React Native client for the gcp3 finance platform. Talks to **three** 
 | Layer | Tech | Deployed To |
 |-------|------|-------------|
 | Mobile shell | Expo SDK 54 + React Native 0.81 + React 19.1 | EAS Build → iOS / Android / Web |
-| Routing | expo-router 6 (installed but not currently used — App.tsx is the entry) | bundled |
+| Routing | expo-router 6 (installed but not currently used — App.tsx is the entry; the `app/` tree is dead code, so new UI and providers must target App.tsx and its screens, as the consent sheet mount bug of 2026-10-14 showed) | bundled |
 | Auth | @clerk/clerk-expo 2.19 | Clerk-hosted |
 | OAuth | Google Identity Services via Clerk | Google Cloud |
 | Storage | [[entity-secure-storage]] (Keychain on native, localStorage on web) | device-local |
