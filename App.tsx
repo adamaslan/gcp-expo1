@@ -9,6 +9,7 @@ import BriefingScreen from './screens/BriefingScreen';
 import HoldFoldScreen from './screens/HoldFoldScreen';
 import ChatScreen from './screens/ChatScreen';
 import SignInScreen from './screens/SignInScreen';
+import { ConsentSheet } from './components/ConsentSheet';
 import TabBar, { type TabKey } from './components/TabBar';
 import { theme } from './lib/ui/theme';
 import { validateConfig } from './lib/config-validator';
@@ -165,6 +166,7 @@ export default function App() {
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
         <AuthProvider>
           <AppRoot />
+          <ConsentSheet />
         </AuthProvider>
       </ClerkProvider>
     </SafeAreaProvider>
