@@ -4,12 +4,21 @@
  *
  * Install: npx expo install @sentry/react-native
  * Required env: EXPO_PUBLIC_SENTRY_DSN
+ *
+ * Consent-gated: crash reporting is not strictly necessary, so it only starts
+ * once the shared consent record grants `analytics`, and closes if that consent
+ * is revoked. Call syncSentryWithConsent() once at startup instead of
+ * initSentry() directly.
  */
+
+import { isAllowed } from './shared/consent';
+import { getConsent, onConsentChange } from './consent-store';
 
 let _ready = false;
 
 export function initSentry(): void {
   if (_ready) return;
+  if (!isAllowed(getConsent(), 'analytics')) return;
   const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
   if (!dsn) {
     console.warn('[sentry] EXPO_PUBLIC_SENTRY_DSN not set — crash reporting disabled');
@@ -60,4 +69,19 @@ export function setSentryUser(id: string, email?: string): void {
 
 export function clearSentryUser(): void {
   getSentry()?.setUser(null);
+}
+
+/** Start Sentry when analytics consent is granted; close it on revocation. Returns an unsubscribe. */
+export function syncSentryWithConsent(): () => void {
+  initSentry();
+  return onConsentChange((record) => {
+    if (isAllowed(record, 'analytics')) {
+      initSentry();
+      return;
+    }
+    const S = getSentry();
+    if (!S) return;
+    _ready = false;
+    void S.close();
+  });
 }

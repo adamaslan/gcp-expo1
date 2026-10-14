@@ -21,6 +21,8 @@ const PAIRS = [
   { path: "lib/shared/signal-policy.ts", normalize: null },
   { path: "lib/shared/live-price.ts", normalize: null },
   { path: "lib/shared/attribution.ts", normalize: null },
+  { path: "lib/shared/consent.ts", normalize: null },
+  { path: "lib/shared/legal-consent.ts", normalize: null },
 ];
 
 function read(root, path) {
