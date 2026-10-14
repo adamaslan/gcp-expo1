@@ -11,8 +11,11 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import { theme, radius, spacing } from '@/lib/ui/theme';
+import { PRIVACY_URL, TOS_URL } from '@/lib/shared/legal-consent';
+import { markLegalConsentAccepted } from '@/lib/legal-consent-store';
 
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
@@ -27,6 +30,7 @@ interface SignUpState {
   loading: boolean;
   pendingVerification: boolean;
   code: string;
+  legalAccepted: boolean;
 }
 
 export default function SignUpScreen() {
@@ -42,6 +46,7 @@ export default function SignUpScreen() {
     loading: false,
     pendingVerification: false,
     code: '',
+    legalAccepted: false,
   });
 
   function validateInputs(): string | null {
@@ -59,6 +64,9 @@ export default function SignUpScreen() {
     }
     if (state.password !== state.confirmPassword) {
       return 'Passwords do not match';
+    }
+    if (!state.legalAccepted) {
+      return 'Please accept the Terms of Service and Privacy Policy to continue';
     }
     return null;
   }
@@ -80,6 +88,9 @@ export default function SignUpScreen() {
         firstName: state.firstName || undefined,
         lastName: state.lastName || undefined,
       });
+
+      // Account exists now; remember the express consent until a session can deliver it to the portal.
+      await markLegalConsentAccepted();
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
@@ -251,10 +262,29 @@ export default function SignUpScreen() {
             Min 8 chars · uppercase · lowercase · number · special character
           </Text>
 
+          <View style={styles.legalRow}>
+            <Pressable
+              onPress={() => setState(prev => ({ ...prev, legalAccepted: !prev.legalAccepted }))}
+              disabled={state.loading}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: state.legalAccepted }}
+              accessibilityLabel="I agree to the Terms of Service and Privacy Policy"
+              style={[styles.checkbox, state.legalAccepted && styles.checkboxChecked]}
+            >
+              {state.legalAccepted ? <Text style={styles.checkmark}>✓</Text> : null}
+            </Pressable>
+            <Text style={styles.legalText}>
+              I agree to the{' '}
+              <Text style={styles.legalLink} onPress={() => Linking.openURL(TOS_URL)}>Terms of Service</Text>
+              {' '}and{' '}
+              <Text style={styles.legalLink} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy Policy</Text>.
+            </Text>
+          </View>
+
           <Pressable
-            style={({ pressed }) => [styles.primaryButton, state.loading && styles.buttonDisabled, pressed && styles.buttonPressed]}
+            style={({ pressed }) => [styles.primaryButton, (state.loading || !state.legalAccepted) && styles.buttonDisabled, pressed && styles.buttonPressed]}
             onPress={handleSignUp}
-            disabled={state.loading}
+            disabled={state.loading || !state.legalAccepted}
           >
             {state.loading ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -378,6 +408,29 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     lineHeight: 15,
   },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+    backgroundColor: theme.bg.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: theme.accent.indigo,
+    borderColor: theme.accent.indigo,
+  },
+  checkmark: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  legalText: { flex: 1, fontSize: 12, color: theme.text.secondary, lineHeight: 18 },
+  legalLink: { color: theme.accent.indigo, textDecorationLine: 'underline' },
   primaryButton: {
     backgroundColor: theme.accent.indigo,
     paddingVertical: spacing.md,
