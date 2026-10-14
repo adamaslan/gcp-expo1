@@ -55,9 +55,11 @@ async function sendLegal(gen: number, userId: string, token: GetToken, allowBind
     await clearBoundLegalConsent(userId, bound.nonce);
     return;
   }
-  if (attempt >= LEGAL_MAX_ATTEMPTS) return;
+  // The post may have outlived a sign-out/unmount that already cancelled the timers.
+  if (attempt >= LEGAL_MAX_ATTEMPTS || gen !== generation) return;
   const timer = setTimeout(() => {
     retryTimers.delete(timer);
+    if (gen !== generation) return;
     enqueue(gen, () => sendLegal(gen, userId, token, false, attempt + 1));
   }, LEGAL_RETRY_BASE_MS * 2 ** (attempt - 1));
   retryTimers.add(timer);
