@@ -82,8 +82,17 @@ async function clearSentFlag(): Promise<void> {
   }
 }
 
-/** Delete the persisted touch and sent flag (consent revoked). Never throws. */
-export async function clearAttributionState(): Promise<void> {
+// Single module-level chain: every storage read-modify-write of the touch and
+// sent flag runs one at a time, so the 90-day first-touch rule is evaluated
+// atomically. Never held across a network call or the token fetch.
+let storageChain: Promise<unknown> = Promise.resolve();
+function withStorageLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = storageChain.then(fn, fn);
+  storageChain = run.catch(() => undefined);
+  return run;
+}
+
+async function clearUnlocked(): Promise<void> {
   for (const key of [ATTRIB_COOKIE, SENT_KEY]) {
     try {
       await SecureStore.deleteItemAsync(key);
@@ -93,14 +102,26 @@ export async function clearAttributionState(): Promise<void> {
   }
 }
 
+/** Delete the persisted touch and sent flag (consent revoked). Idempotent; never throws. */
+export function clearAttributionState(): Promise<void> {
+  return withStorageLock(clearUnlocked);
+}
+
 /**
  * Persist `candidate` as first-touch unless a live (<90 day) one exists.
  * Consent is re-read right before the write and again after it (a revocation
  * during the awaits wipes what was just written). Returns the effective first touch.
  */
-export async function persistFirstTouch(
+export function persistFirstTouch(
   candidate: AttributionTouch | null,
   now: Date = new Date(),
+): Promise<AttributionTouch | null> {
+  return withStorageLock(() => persistUnlocked(candidate, now));
+}
+
+async function persistUnlocked(
+  candidate: AttributionTouch | null,
+  now: Date,
 ): Promise<AttributionTouch | null> {
   if (!analyticsGranted()) return null;
   const existing = await readStoredTouch(now);
@@ -110,7 +131,7 @@ export async function persistFirstTouch(
   await clearSentFlag();
   await setPref(ATTRIB_COOKIE, serialiseTouch(candidate));
   if (!analyticsGranted()) {
-    await clearAttributionState();
+    await clearUnlocked();
     return null;
   }
   return candidate;
@@ -136,9 +157,11 @@ function queryOf(touch: AttributionTouch): string {
 export async function reportFirstTouch(getToken: () => Promise<string | null>): Promise<void> {
   if (!analyticsGranted()) return;
   try {
-    if ((await getPref(SENT_KEY)) === '1') return;
-    const touch = await readStoredTouch(new Date());
-    if (!touch) return;
+    const { touch, alreadySent } = await withStorageLock(async () => {
+      const stored = await readStoredTouch(new Date());
+      return { touch: stored, alreadySent: !!stored && (await getPref(SENT_KEY)) === stored.ts };
+    });
+    if (!touch || alreadySent) return;
     const token = await getToken();
     if (!token) return;
     const consent = getConsent(); // fresh, after all awaits
@@ -158,9 +181,16 @@ export async function reportFirstTouch(getToken: () => Promise<string | null>): 
     const accepted = !!body && typeof body === 'object' && (body as { ok?: unknown; captured?: unknown }).ok === true
       && (body as { captured?: unknown }).captured === true;
     if (!accepted || !analyticsGranted()) return;
-    await setPref(SENT_KEY, '1');
-    // Revocation may have finished its cleanup while the write was pending.
-    if (!analyticsGranted()) await clearAttributionState();
+    // The flag records WHICH touch was sent (its ts); it is written only if that
+    // touch is still the stored one, so it can never mark a different touch.
+    await withStorageLock(async () => {
+      if (!analyticsGranted()) return;
+      const current = await readStoredTouch(new Date());
+      if (!current || current.ts !== touch.ts) return;
+      await setPref(SENT_KEY, touch.ts);
+      // Revocation may have fired while the write was pending.
+      if (!analyticsGranted()) await clearUnlocked();
+    });
   } catch {
     // Best-effort: a lost report retries next launch.
   }

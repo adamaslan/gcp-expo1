@@ -23,15 +23,25 @@ export function useAttributionCapture(): void {
   const getTokenRef = useRef(getToken);
   const signedInRef = useRef(isSignedIn);
   const inflight = useRef(false);
+  const rerun = useRef(false);
   getTokenRef.current = getToken;
   signedInRef.current = isSignedIn;
 
-  // Same gates as the effect below; idempotent (inflight guard + server-side sent flag).
+  // Same gates as the effect below. Coalescing: a trigger during an in-flight
+  // attempt schedules exactly one more run after it finishes (so a touch persisted
+  // mid-report is not left waiting for another trigger).
   const attemptReport = useRef(async () => {
-    if (inflight.current || !signedInRef.current || !isAllowed(getConsent(), 'analytics')) return;
+    if (inflight.current) {
+      rerun.current = true;
+      return;
+    }
     inflight.current = true;
     try {
-      await reportFirstTouch(() => getTokenRef.current());
+      do {
+        rerun.current = false;
+        if (!signedInRef.current || !isAllowed(getConsent(), 'analytics')) break;
+        await reportFirstTouch(() => getTokenRef.current());
+      } while (rerun.current);
     } finally {
       inflight.current = false;
     }
