@@ -1,8 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Platform, Linking } from 'react-native';
 import { useOAuth, useSignIn } from '@clerk/clerk-expo';
 import * as WebBrowser from 'expo-web-browser';
 import { theme, radius, spacing } from '../lib/ui/theme';
+import { PRIVACY_URL, TOS_URL } from '../lib/shared/legal-consent';
+import { markLegalConsentAccepted } from '../lib/legal-consent-store';
 
 // Required so the browser session closes correctly after OAuth on native.
 WebBrowser.maybeCompleteAuthSession();
@@ -12,8 +14,12 @@ export default function SignInScreen() {
   const { isLoaded } = useSignIn();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Never pre-checked. Google OAuth creates the account implicitly, so this
+  // gates the only entry point; existing users see it too (recorded per version).
+  const [legalAccepted, setLegalAccepted] = useState(false);
 
   const signInWithGoogle = useCallback(async () => {
+    if (!legalAccepted) return;
     setLoading(true);
     setError(null);
     try {
@@ -22,6 +28,8 @@ export default function SignInScreen() {
         redirectUrl: Platform.OS === 'web' ? undefined : 'nuwrrrld://oauth-callback',
       });
       if (result?.createdSessionId && result?.setActive) {
+        // Persist before the session activates so the portal sync sees it.
+        await markLegalConsentAccepted();
         await result.setActive({ session: result.createdSessionId });
       }
     } catch (err) {
@@ -30,7 +38,7 @@ export default function SignInScreen() {
     } finally {
       setLoading(false);
     }
-  }, [startOAuthFlow]);
+  }, [startOAuthFlow, legalAccepted]);
 
   if (!isLoaded) {
     return (
@@ -54,12 +62,31 @@ export default function SignInScreen() {
             Your session stays active for 1 hour. After that you'll be asked to sign in again.
           </Text>
 
+          <View style={styles.legalRow}>
+            <Pressable
+              onPress={() => setLegalAccepted((v) => !v)}
+              disabled={loading}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: legalAccepted }}
+              accessibilityLabel="I agree to the Terms of Service and Privacy Policy"
+              style={[styles.checkbox, legalAccepted && styles.checkboxChecked]}
+            >
+              {legalAccepted ? <Text style={styles.checkmark}>✓</Text> : null}
+            </Pressable>
+            <Text style={styles.legalText}>
+              I agree to the{' '}
+              <Text style={styles.legalLink} onPress={() => Linking.openURL(TOS_URL)}>Terms of Service</Text>
+              {' '}and{' '}
+              <Text style={styles.legalLink} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy Policy</Text>.
+            </Text>
+          </View>
+
           <Pressable
             onPress={signInWithGoogle}
-            disabled={loading}
+            disabled={loading || !legalAccepted}
             style={({ pressed }) => [
               styles.googleButton,
-              loading && styles.buttonDisabled,
+              (loading || !legalAccepted) && styles.buttonDisabled,
               pressed && styles.buttonPressed,
             ]}
           >
@@ -139,6 +166,29 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: spacing.xl,
   },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+    backgroundColor: theme.bg.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: theme.accent.indigo,
+    borderColor: theme.accent.indigo,
+  },
+  checkmark: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  legalText: { flex: 1, fontSize: 12, color: theme.text.secondary, lineHeight: 18 },
+  legalLink: { color: theme.accent.indigo, textDecorationLine: 'underline' },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',

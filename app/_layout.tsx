@@ -7,7 +7,6 @@ import * as SecureStore from 'expo-secure-store';
 import { AuthProvider } from '@/lib/auth-provider';
 import { validateConfig } from '@/lib/config-validator';
 import { ConsentSheet } from '@/components/ConsentSheet';
-import { usePortalConsentSync } from '@/lib/usePortalConsentSync';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -37,8 +36,6 @@ function AuthGuard() {
   const { isLoaded, isSignedIn } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-
-  usePortalConsentSync();
 
   useEffect(() => {
     if (!isLoaded) return;
