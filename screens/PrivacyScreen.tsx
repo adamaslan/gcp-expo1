@@ -80,6 +80,9 @@ export default function PrivacyScreen({ onClose }: Props) {
   const { signOut, accountDeletedPendingSignOut: signOutPending, setAccountDeletedPendingSignOut } = useAuthContext();
   const [busy, setBusy] = useState<Busy>(null);
   const mounted = useRef(true);
+  // Synchronous guards: state (`busy`) flips too late to stop rapid double taps.
+  const deletionInFlight = useRef(false);
+  const confirmAlertOpen = useRef(false);
   useEffect(() => () => { mounted.current = false; }, []);
 
   // Export
@@ -163,6 +166,8 @@ export default function PrivacyScreen({ onClose }: Props) {
   };
 
   const handlePreviewDeletion = async () => {
+    if (deletionInFlight.current || confirmAlertOpen.current) return;
+    deletionInFlight.current = true;
     setBusy('preview');
     setDeleteError(null);
     try {
@@ -173,12 +178,15 @@ export default function PrivacyScreen({ onClose }: Props) {
     } catch (err) {
       if (mounted.current) setDeleteError(describeError(err));
     } finally {
+      deletionInFlight.current = false;
       if (mounted.current) setBusy(null);
     }
   };
 
   // ---- Delete: step 2 (irreversible) ----
   const performDeletion = async (deletionToken: string) => {
+    if (deletionInFlight.current) return;
+    deletionInFlight.current = true;
     setBusy('delete');
     setDeleteError(null);
     try {
@@ -208,24 +216,34 @@ export default function PrivacyScreen({ onClose }: Props) {
         setDeleteError(describeError(err));
       }
     } finally {
+      deletionInFlight.current = false;
       if (mounted.current) setBusy(null);
     }
   };
 
   const handleConfirmDeletion = () => {
-    if (!preview) return;
+    if (!preview || deletionInFlight.current || confirmAlertOpen.current) return;
     if (previewExpiresAt !== null && Date.now() >= previewExpiresAt) {
       resetDeletion('The confirmation expired. Review what will be deleted and confirm again.');
       return;
     }
     const deletionToken = preview.token;
+    confirmAlertOpen.current = true;
     Alert.alert(
       'Delete your account permanently?',
       'This erases your data and your account. It cannot be undone.',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete forever', style: 'destructive', onPress: () => void performDeletion(deletionToken) },
+        { text: 'Cancel', style: 'cancel', onPress: () => { confirmAlertOpen.current = false; } },
+        {
+          text: 'Delete forever',
+          style: 'destructive',
+          onPress: () => {
+            confirmAlertOpen.current = false;
+            void performDeletion(deletionToken);
+          },
+        },
       ],
+      { cancelable: true, onDismiss: () => { confirmAlertOpen.current = false; } },
     );
   };
 

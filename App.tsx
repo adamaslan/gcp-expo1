@@ -48,7 +48,7 @@ function AppRoot() {
   const [tab, setTab] = useState<TabKey>('briefing');
   const [sessionExpired, setSessionExpired] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
-  const { accountDeletedPendingSignOut } = useAuthContext();
+  const { accountDeletedPendingSignOut, isLoaded: authContextReady } = useAuthContext();
   const insets = useSafeAreaInsets();
 
   // Track sign-in timestamp and enforce a 1-hour hard cap. Defense-in-depth
@@ -94,7 +94,7 @@ function AppRoot() {
     };
   }, [isSignedIn, signOut]);
 
-  if (!isLoaded) {
+  if (!isLoaded || !authContextReady) {
     return (
       <View style={styles.splash}>
         <ActivityIndicator size="large" color={theme.accent.indigo} />

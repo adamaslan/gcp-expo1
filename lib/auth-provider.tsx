@@ -3,7 +3,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import * as SecureStore from './secure-storage';
 import { useAuth as useClerkAuth, useUser, useSession } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { SESSION_CACHE_KEY, TOKEN_CACHE_KEY } from './auth-constants';
+import { DELETED_PENDING_SIGNOUT_KEY, SESSION_CACHE_KEY, TOKEN_CACHE_KEY } from './auth-constants';
 
 interface AuthContextType {
   isLoaded: boolean;
@@ -34,7 +34,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [accountDeletedPendingSignOut, setAccountDeletedPendingSignOut] = useState(false);
+  const [accountDeletedPendingSignOut, setPendingState] = useState(false);
+  // Unknown until the persisted flag is read; keeps the signed-in shell from flashing.
+  const [pendingFlagLoaded, setPendingFlagLoaded] = useState(false);
+
+  function setAccountDeletedPendingSignOut(pending: boolean) {
+    setPendingState(pending);
+    const write = pending
+      ? SecureStore.setItemAsync(DELETED_PENDING_SIGNOUT_KEY, '1')
+      : SecureStore.deleteItemAsync(DELETED_PENDING_SIGNOUT_KEY);
+    write.catch((err) => console.warn('Failed to persist deletion sign-out flag:', err));
+  }
+
+  useEffect(() => {
+    SecureStore.getItemAsync(DELETED_PENDING_SIGNOUT_KEY)
+      .then((value) => setPendingState(value === '1'))
+      .catch((err) => console.warn('Failed to read deletion sign-out flag:', err))
+      .finally(() => setPendingFlagLoaded(true));
+  }, []);
   const prevSessionStatus = useRef<string | null>(null);
 
   useEffect(() => {
@@ -144,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value: AuthContextType = {
-    isLoaded: isLoaded && isInitialized,
+    isLoaded: isLoaded && isInitialized && pendingFlagLoaded,
     isSignedIn: isSignedIn ?? null,
     userId: user?.id || null,
     userEmail: user?.emailAddresses?.[0]?.emailAddress || null,
