@@ -1,0 +1,123 @@
+/**
+ * attribution-capture — consent-gated first-touch acquisition capture from
+ * launch / deep-link URLs. Mobile counterpart of the portal's
+ * components/AttributionCapture.tsx + POST /api/attribution.
+ *
+ * LIMITS (read before relying on this):
+ *  - Only URLs delivered to the app are seen (initial launch URL and URL
+ *    events, e.g. nuwrrrld://...?utm_source=x or a universal link). Store-install
+ *    referrers (Google Play Install Referrer, App Store / SKAdNetwork) are NOT
+ *    captured by this path; an install from an ad with no deep link yields no touch.
+ *  - Unverified on a device and against the deployed portal.
+ *
+ * Consent: attribution belongs to the `analytics` category (see
+ * lib/shared/attribution.ts header; the portal route returns 204 and stores
+ * nothing unless nu_consent.analytics is true). Same gate as lib/analytics.ts:
+ * nothing is read-through, persisted or sent until the consent record is loaded
+ * AND grants `analytics`. A touch seen before consent resolves is held in memory
+ * only and dropped on process exit.
+ *
+ * Portal contract mirrored: POST {PORTAL}/api/attribution, JSON body
+ * { query, referrer, landing_path }, Clerk bearer auth. The route reads consent
+ * from the `nu_consent` COOKIE (not the bearer), so we send it as a Cookie
+ * header, plus `nu_attrib` so the server treats our stored touch as first-touch.
+ * 204 = server saw no analytics consent (not stored -> retry later); 200 = done
+ * (server insert is ON CONFLICT DO NOTHING, so resending is harmless).
+ * The token is never logged.
+ */
+import * as Linking from 'expo-linking';
+import {
+  ATTRIB_COOKIE,
+  ATTRIB_COOKIE_MAX_AGE,
+  CLICK_ID_PARAMS,
+  UTM_PARAMS,
+  buildTouch,
+  parseTouch,
+  serialiseTouch,
+  type AttributionTouch,
+} from './shared/attribution';
+import { CONSENT_COOKIE, isAllowed, serializeConsent, type ConsentRecord } from './shared/consent';
+import { getPref, setPref } from './shared/prefs';
+
+const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
+const SENT_KEY = 'nu_attrib_sent';
+const MS_PER_SECOND = 1000;
+const FIRST_TOUCH_TTL_MS = ATTRIB_COOKIE_MAX_AGE * MS_PER_SECOND;
+
+/** Build a touch from a launch URL; null when the URL carries nothing attributable. */
+export function touchFromUrl(url: string | null | undefined, now: Date = new Date()): AttributionTouch | null {
+  if (!url) return null;
+  try {
+    const parsed = Linking.parse(url);
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(parsed.queryParams ?? {})) {
+      const first = Array.isArray(value) ? value[0] : value;
+      if (typeof first === 'string') params.set(key, first);
+    }
+    // No referrer: a launch URL has none. Landing path is the in-app route.
+    return buildTouch(params, { landingPath: parsed.path ? `/${parsed.path}` : null, now });
+  } catch {
+    return null;
+  }
+}
+
+async function readStoredTouch(now: Date): Promise<AttributionTouch | null> {
+  const touch = parseTouch(await getPref(ATTRIB_COOKIE));
+  if (!touch) return null;
+  if (now.getTime() - Date.parse(touch.ts) > FIRST_TOUCH_TTL_MS) return null; // 90-day window lapsed
+  return touch;
+}
+
+/**
+ * Persist `candidate` as first-touch unless a live (<90 day) one exists.
+ * Caller must have verified analytics consent. Returns the effective first touch.
+ */
+export async function persistFirstTouch(
+  candidate: AttributionTouch | null,
+  now: Date = new Date(),
+): Promise<AttributionTouch | null> {
+  const existing = await readStoredTouch(now);
+  if (existing) return existing;
+  if (!candidate) return null;
+  await setPref(ATTRIB_COOKIE, serialiseTouch(candidate));
+  await setPref(SENT_KEY, '0'); // new first touch -> not yet reported
+  return candidate;
+}
+
+function queryOf(touch: AttributionTouch): string {
+  const params = new URLSearchParams();
+  for (const key of UTM_PARAMS) if (touch.utm[key]) params.set(key, touch.utm[key] as string);
+  for (const key of CLICK_ID_PARAMS) if (touch.click_ids[key]) params.set(key, touch.click_ids[key] as string);
+  return `?${params.toString()}`;
+}
+
+/**
+ * POST the stored first touch once. Requires a Clerk token and a granted
+ * analytics consent record; both re-checked here. Never throws.
+ */
+export async function reportFirstTouch(
+  getToken: () => Promise<string | null>,
+  consent: ConsentRecord | null,
+): Promise<void> {
+  if (!isAllowed(consent, 'analytics') || !consent) return;
+  try {
+    if ((await getPref(SENT_KEY)) === '1') return;
+    const touch = await readStoredTouch(new Date());
+    if (!touch) return;
+    const token = await getToken();
+    if (!token) return;
+    const res = await fetch(`${PORTAL_URL}/api/attribution`, {
+      method: 'POST',
+      credentials: 'omit',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        Cookie: `${CONSENT_COOKIE}=${encodeURIComponent(serializeConsent(consent))}; ${ATTRIB_COOKIE}=${encodeURIComponent(serialiseTouch(touch))}`,
+      },
+      body: JSON.stringify({ query: queryOf(touch), referrer: touch.referrer ?? '', landing_path: touch.landing_path }),
+    });
+    if (res.status === 200) await setPref(SENT_KEY, '1');
+  } catch {
+    // Best-effort: a lost report retries next launch. Nothing logged (token safety).
+  }
+}
