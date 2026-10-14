@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import {
   getMarketOverview,
   getMarketOverviewAi,
@@ -32,7 +32,12 @@ function useFetch<T>(fetcher: () => Promise<T>): LoadState<T> {
   return state;
 }
 
-export default function BriefingScreen() {
+interface BriefingScreenProps {
+  /** Opens the Privacy & data screen (data export, correction, account deletion). */
+  onOpenPrivacy?: () => void;
+}
+
+export default function BriefingScreen({ onOpenPrivacy }: BriefingScreenProps = {}) {
   const baseOverviewState = useFetch(getMarketOverview);
   const aiOverviewState = useFetch(getMarketOverviewAi);
   // AI fields arrive late (~16s); a failed/slow AI fetch just leaves them off.
@@ -69,6 +74,15 @@ export default function BriefingScreen() {
       <View style={styles.councilWrap}>
         <CouncilPanel prompt={councilPrompt} label="Ask the Council" traderFilter="T2" />
       </View>
+
+      {onOpenPrivacy && (
+        <Card title="Account">
+          <Pressable onPress={onOpenPrivacy} accessibilityRole="button" style={styles.accountRow}>
+            <Text style={styles.accountRowText}>Privacy & data</Text>
+            <Text style={styles.accountRowChevron}>{'>'}</Text>
+          </Pressable>
+        </Card>
+      )}
     </ScrollView>
   );
 }
@@ -241,6 +255,14 @@ function ErrorText({ message }: { message: string }) {
 }
 
 const styles = StyleSheet.create({
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  accountRowText: { fontSize: 14, color: theme.text.primary },
+  accountRowChevron: { fontSize: 14, color: theme.text.muted },
   container: {
     flex: 1,
     backgroundColor: theme.bg.base,
