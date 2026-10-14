@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
+import { isPortfolioHealth } from './portfolio';
 import type { PortfolioHealth, OptimizerSuggestion, WatchlistItem } from './portfolio';
 
 const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwrrrld.com';
@@ -77,7 +78,11 @@ export function usePortfolio(): PortfolioState {
           // "health request failed" — the stale score from a prior fetch
           // must not linger and render as if it were still current.
           if (hRes.status === 204) setHealth(null);
-          else if (hData) setHealth(hData);
+          // A payload that fails the runtime guard (e.g. an unadapted upstream
+          // shape) is treated like a failed health fetch: no score, never an
+          // unchecked cast that renders as "score 0 / Grade F".
+          else if (isPortfolioHealth(hData)) setHealth(hData);
+          else setHealth(null);
           // Set from the response even on the 204/no-content path, so a
           // stale "local" badge from a previous fetch doesn't linger once the
           // watchlist empties out.
