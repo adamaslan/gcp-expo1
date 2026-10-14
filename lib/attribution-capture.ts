@@ -74,6 +74,14 @@ function analyticsGranted(): boolean {
   return isAllowed(getConsent(), 'analytics');
 }
 
+async function clearSentFlag(): Promise<void> {
+  try {
+    await SecureStore.deleteItemAsync(SENT_KEY);
+  } catch {
+    /* best-effort */
+  }
+}
+
 /** Delete the persisted touch and sent flag (consent revoked). Never throws. */
 export async function clearAttributionState(): Promise<void> {
   for (const key of [ATTRIB_COOKIE, SENT_KEY]) {
@@ -98,8 +106,9 @@ export async function persistFirstTouch(
   const existing = await readStoredTouch(now);
   if (existing) return existing;
   if (!candidate || !analyticsGranted()) return null;
+  // A sent flag must never outlive the touch it refers to: drop it first.
+  await clearSentFlag();
   await setPref(ATTRIB_COOKIE, serialiseTouch(candidate));
-  await setPref(SENT_KEY, '0'); // new first touch -> not yet reported
   if (!analyticsGranted()) {
     await clearAttributionState();
     return null;
@@ -148,7 +157,10 @@ export async function reportFirstTouch(getToken: () => Promise<string | null>): 
     const body: unknown = await res.json().catch(() => null);
     const accepted = !!body && typeof body === 'object' && (body as { ok?: unknown; captured?: unknown }).ok === true
       && (body as { captured?: unknown }).captured === true;
-    if (accepted && analyticsGranted()) await setPref(SENT_KEY, '1');
+    if (!accepted || !analyticsGranted()) return;
+    await setPref(SENT_KEY, '1');
+    // Revocation may have finished its cleanup while the write was pending.
+    if (!analyticsGranted()) await clearAttributionState();
   } catch {
     // Best-effort: a lost report retries next launch.
   }
