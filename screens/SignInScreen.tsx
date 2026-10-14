@@ -29,7 +29,11 @@ export default function SignInScreen() {
       });
       if (result?.createdSessionId && result?.setActive) {
         // Persist before the session activates so the portal sync sees it.
-        await markLegalConsentAccepted();
+        // Fail closed: no saved acceptance, no session.
+        if (!(await markLegalConsentAccepted())) {
+          setError("Couldn't record your acceptance - please try again");
+          return;
+        }
         await result.setActive({ session: result.createdSessionId });
       }
     } catch (err) {
