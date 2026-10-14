@@ -25,9 +25,10 @@ function draftFrom(record: ConsentRecord | null): ConsentChoices {
  * No navigation dependency — mount it anywhere. Writing goes through the
  * consent-store, which notifies analytics (resets identity) and Sentry (closes)
  * before the write finishes, so a withdrawal takes effect immediately.
+ * Pass `embedded` to drop the heading and padding when a host card supplies them.
  * Reject all and Accept all share one style (equal weight, no dark pattern).
  */
-export function ConsentPreferences() {
+export function ConsentPreferences({ embedded = false }: { embedded?: boolean } = {}) {
   const { consent, loaded } = useConsent();
   const [draft, setDraft] = useState<ConsentChoices>(() => draftFrom(consent));
   const [saving, setSaving] = useState(false);
@@ -60,8 +61,8 @@ export function ConsentPreferences() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Privacy choices</Text>
+    <View style={embedded ? undefined : styles.container}>
+      {embedded ? null : <Text style={styles.title}>Privacy choices</Text>}
       <Text style={styles.intro}>
         You can change or withdraw these choices at any time. Changes apply immediately.
       </Text>

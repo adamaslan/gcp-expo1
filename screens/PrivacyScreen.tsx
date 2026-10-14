@@ -23,6 +23,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useAuthContext } from '../lib/auth-provider';
 import { theme, radius, spacing } from '../lib/ui/theme';
 import { StateView } from '../components/StateView';
+import { ConsentPreferences } from '../components/ConsentPreferences';
 import {
   PortalPrivacyError,
   confirmAccountDeletion,
@@ -305,7 +306,11 @@ export default function PrivacyScreen({ onClose }: Props) {
       )}
       <Text style={styles.title}>Privacy & data</Text>
 
-      {/* ConsentPreferences mounts here — see feat/consent-ui-signup */}
+      {/* Cookies & tracking: withdrawal as easy as giving. Self-contained, no navigation deps. */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Cookies & tracking</Text>
+        <ConsentPreferences embedded />
+      </View>
 
       {/* Export */}
       <View style={styles.card}>
