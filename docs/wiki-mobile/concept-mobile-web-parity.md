@@ -161,6 +161,16 @@ compliance; the risk lives in the gap between the two denominators.
 
 > ℹ️ **Mobile PR fix/holdfold-fib-type (2026-09-26) assessed — mobile type fix only, headline unchanged at ~62%.** `clients/holdfold.ts` now declares the Fibonacci response the backend actually sends (`FibLevel { name, price, distance_pct, strength, type }`, `fib_confluence_zones`, `nearest_fib_support/resistance`), replacing `{ level, price }` whose `level` never arrived. Nothing in the mobile app reads these fields yet, so no behavior changed. Mobile and portal now agree on the *type*; the portal's `lib/shared/fib-levels.ts` (portal PR #185) is deliberately not copied into mobile until that PR merges, since the drift gate compares against the other repo's `main`. No denominator moves.
 
+> ℹ️ **Portal PR #185 (2026-09-26) assessed — portal-only, headline unchanged at ~62%.**
+> The portal's Hold/Fold panel now draws a Fibonacci ladder from data the backend
+> already returned, via a new portal-only `lib/shared/fib-levels.ts`. Nothing in
+> this repo changed in that PR. Our `clients/holdfold.ts` had typed `FibLevel` as
+> `{ level, price }` while the backend sends `{ name, price, distance_pct, strength,
+> type }`; that type was since fixed by mobile PR #49 (now on `main`), so the
+> drift is closed. No screen renders Fibonacci data yet (`fib_levels` is only
+> declared in the client type). The module is portable as-is and is a port
+> candidate, not a drift.
+
 ## Domain parity matrix
 
 | Domain | Mobile | Portal | Shared module | Status |

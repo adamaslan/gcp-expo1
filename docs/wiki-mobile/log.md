@@ -310,3 +310,5 @@ was lost.
 ## [2026-09-24] ingest | PR #47 feat: adopt shared consent model, gate analytics + sentry | pages touched: 2
 
 ## [2026-09-26] ingest | mobile fix/holdfold-fib-type — FibLevel type matches backend | pages touched: 1
+
+## [2026-09-26] ingest | PR #185 feat(holdfold): Fibonacci ladder in live analysis panel | pages touched: 2
