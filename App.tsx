@@ -15,6 +15,7 @@ import TabBar, { type TabKey } from './components/TabBar';
 import { theme } from './lib/ui/theme';
 import { validateConfig } from './lib/config-validator';
 import { useAttributionCapture } from './lib/useAttributionCapture';
+import { usePortalConsentSync } from './lib/usePortalConsentSync';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -52,6 +53,8 @@ function AppRoot() {
   const { accountDeletedPendingSignOut, isLoaded: authContextReady } = useAuthContext();
   const insets = useSafeAreaInsets();
   useAttributionCapture();
+
+  usePortalConsentSync();
 
   // Track sign-in timestamp and enforce a 1-hour hard cap. Defense-in-depth
   // alongside Clerk Dashboard session-lifetime config (see PRODUCTION_CLERK.md).
