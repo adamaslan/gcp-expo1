@@ -74,6 +74,12 @@ haptic feedback on outcome yet, only on the tap itself — see open questions).
   (health/suggestions/watchlist) fail — a watchlist-only fetch failure still
   resolves to `[]` and renders the same "empty" copy as a genuinely empty
   list, indistinguishable from this fix's intended case.
+- **Unadapted health payload could render as "score 0 / Grade F" (fixed 2026-10-14)** —
+  `lib/portfolio.ts` had drifted from the portal copy and lacked its runtime
+  guards (`isHealthFactor()` / `isPortfolioHealth()`). Now ported byte-identically
+  and enforced by the drift gate; `usePortfolio` validates the health response, so
+  an invalid payload lands in the hook's existing error state and a failed fetch
+  clears stale health instead of showing the old score.
 
 ## Open questions
 

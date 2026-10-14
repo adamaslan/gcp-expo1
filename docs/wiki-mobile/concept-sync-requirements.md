@@ -130,6 +130,12 @@ shared module involved, so no port or de-drift item.
 | **Analytics + Sentry** (`analytics.ts`, `sentry.ts` — [[entity-monitoring]]) | The portal has no client analytics/error-reporting module found. Add equivalents (Vercel Analytics + Sentry Next.js SDK) for observability parity. |
 | **Schwab health** (`schwab-health.ts`) | A portal health check for the Schwab integration, if that integration is meant to surface on web. |
 
+**2026-10-14, mobile PR fix/portfolio-health-guard.** Drift-gate coverage item:
+`lib/portfolio.ts` and `lib/retention.ts` are now gated on the mobile side (13
+gated files). Still open: the portal's gate needs the mirror entries (portal PR
+pending; `portfolio.ts` only after this merges), and `lib/nuai.ts` remains
+divergent and ungated (26 lines), tracked separately above.
+
 ## 3. Converge — the AI Council
 
 The flagship is the least synced domain and needs an explicit decision, not a

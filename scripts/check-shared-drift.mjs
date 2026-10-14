@@ -16,6 +16,8 @@ const PAIRS = [
   { path: "lib/digest.ts", normalize: null },
   { path: "lib/signalCard.ts", normalize: null },
   { path: "lib/subscription.ts", normalize: null },
+  { path: "lib/portfolio.ts", normalize: null },
+  { path: "lib/retention.ts", normalize: null },
   { path: "lib/shared/signalFilters.ts", normalize: stripCommentsAndNormalizeImportSpecifiers },
   { path: "lib/shared/prefs.ts", normalize: normalizePrefsSeam },
   { path: "lib/shared/signal-policy.ts", normalize: null },
