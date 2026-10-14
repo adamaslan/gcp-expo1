@@ -161,6 +161,7 @@ parity" is undefined and should not be counted for or against the sync %.
 5. ~~Adopt `lib/shared/signal-policy.ts` + `live-price.ts` before we reimplement them.~~ — **done, our PR #32 (2026-08-08).** Byte-identical, tracked by the drift gate. Neither is consumed by a feature here yet — that's still #6/#7 below.
 6. ~~Adopt `lib/shared/attribution.ts` before we reimplement it.~~ — **done, our PR #39 (2026-09-01).** Byte-identical, drift-gated. Not consumed yet — see #8.
 7. ~~**Adopt `lib/shared/consent.ts` + `legal-consent.ts` and gate `analytics.ts` / `sentry.ts` behind them**~~ — **done 2026-09-24** (feat/adopt-shared-consent) for tracking consent. Still open: a per-category preferences screen, the ToS/Privacy checkbox at sign-up, and a server-side `consent_records` write for signed-in users.
+   - 2026-10-14 correction: the first-run prompt was unreachable until `ConsentSheet` was mounted in the live `App.tsx` (fix/mount-consent-live-entry). The prompt is now reachable; the preferences screen, sign-up ToS checkbox and server-side `consent_records` write remain owed.
 8. Build a mobile attribution-capture path that consumes the now-adopted `lib/shared/attribution.ts` — POST landing query params + referrer to a mobile endpoint on first authenticated load.
 9. Build a mobile DSAR path (export / delete / rectify) — portal PR #78 shipped these web-only; the same account has no mechanism here.
 10. Record the AI Council convergence decision.
