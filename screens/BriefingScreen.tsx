@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import {
   getMarketOverview,
+  getMarketOverviewAi,
   getMacroPulse,
   getSignals,
   type MarketOverview,
@@ -32,7 +33,14 @@ function useFetch<T>(fetcher: () => Promise<T>): LoadState<T> {
 }
 
 export default function BriefingScreen() {
-  const overviewState = useFetch(getMarketOverview);
+  const baseOverviewState = useFetch(getMarketOverview);
+  const aiOverviewState = useFetch(getMarketOverviewAi);
+  // AI fields arrive late (~16s); a failed/slow AI fetch just leaves them off.
+  const overviewState = useMemo<LoadState<MarketOverview>>(() => {
+    if (baseOverviewState.status !== 'ok') return baseOverviewState;
+    if (aiOverviewState.status !== 'ok') return baseOverviewState;
+    return { status: 'ok', data: { ...baseOverviewState.data, ...aiOverviewState.data } };
+  }, [baseOverviewState, aiOverviewState]);
   const macroState = useFetch(getMacroPulse);
   const signalsState = useFetch(getSignals);
 
