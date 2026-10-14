@@ -14,7 +14,7 @@ The mobile app's HTTP layer. As of PR #5 (2026-05-23), `lib/api.ts` is a **thin 
 Three things now stack into one HTTP surface:
 
 1. **`lib/http.ts`** — [[entity-http]] — the shared `httpJson<T>(baseUrl, path, options)` primitive. Owns timeout, retry, monitoring. Backend-agnostic.
-2. **`lib/clients/{gcp3,holdfold,aitext}.ts`** — typed per-backend modules. Each reads its own `EXPO_PUBLIC_*_BACKEND_URL` env var, sets its own timeouts, and exports typed functions (e.g. `getMarketOverview()`, `analyzeHoldFold(req)`, `ragChat(req)`).
+2. **`lib/clients/{gcp3,holdfold,aitext}.ts`** — typed per-backend modules. Each reads its own `EXPO_PUBLIC_*_BACKEND_URL` env var, sets its own timeouts, and exports typed functions (e.g. `getMarketOverview()`, `analyzeHoldFold(req)`, `ragChat(req)`). Note `getMarketOverview()` is split fast/slow since 2026-10-14: it requests `sections=brief,sentiment` (8s timeout), while `getMarketOverviewAi()` requests the slow `ai_summary` section (25s timeout) separately.
 3. **`lib/api.ts`** — the legacy shim. Now ~30 lines: re-exports `fetchBackend` but routes it through `httpJson` against the gcp3 base URL. Existing screens that imported `getMarketData` / `getUserProfile` keep working unchanged.
 
 The single-host assumption tracked by [[concept-single-backend-assumption]] is **paid down** as of PR #5.

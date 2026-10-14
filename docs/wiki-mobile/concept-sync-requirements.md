@@ -106,15 +106,22 @@ just file identity.**
 
 ### Mobile-only performance note (not a port item)
 
-Our own `getMarketOverview()` (`lib/clients/gcp3.ts`) fetches `/market-overview`
-with no `sections=` param on every `BriefingScreen` load — the same ~16.4s
-unscoped call portal PR #46 just fixed on its side by adding
-`?sections=brief`. We do need more than just `brief` (`MacroPulseCard` reads
-beyond it), but if we don't actually use the `history` section (the most
-expensive one per the backend's `days` param), scoping to something like
-`sections=brief,ai_summary,sentiment` would likely cut this well below 16s
-with no behavior change. Worth a quick profiling pass before assuming the
-full fetch is load-bearing.
+**Resolved 2026-10-14 (profiled, then fixed).** `getMarketOverview()`
+(`lib/clients/gcp3.ts`) used to fetch the unscoped `/market-overview` with an
+8s timeout, while the backend needs roughly 16-20s unscoped, so the call timed
+out on every load and neither `HomeScreen` nor `BriefingScreen` ever rendered
+overview data. Per-section measurement showed `brief`, `sentiment` and
+`history` each answer in about 0.1s; the `ai_summary` section alone accounts
+for essentially all of the ~16s. The earlier suggestion here (scope to
+`brief,ai_summary,sentiment`) would therefore not have helped, since it keeps
+the slow section; that combination measured ~16s too.
+
+Shipped fix: `getMarketOverview()` now requests `sections=brief,sentiment`
+(8s timeout), and a new `getMarketOverviewAi()` requests `ai_summary` alone
+(25s timeout). `BriefingScreen` renders from the fast call and merges the five
+AI fields in when the slow call returns; an AI failure is non-fatal.
+`HomeScreen` needs no AI fields and uses only the fast call. Mobile-only; no
+shared module involved, so no port or de-drift item.
 
 ### Mobile has, portal lacks
 | Feature | To sync portal needs… |

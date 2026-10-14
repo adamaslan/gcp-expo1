@@ -225,8 +225,31 @@ export interface AgentRunResponse {
 
 // --- Client functions ---
 
+// Critical path: brief + sentiment return in <1s. ai_summary is the ~16s section and is
+// fetched separately via getMarketOverviewAi() so it cannot blow the 8s ceiling.
 export function getMarketOverview(): Promise<MarketOverview> {
-  return httpJson<_RawOverview>(BASE_URL, '/market-overview', { timeoutMs: 8_000 }).then(normaliseOverview);
+  return httpJson<_RawOverview>(BASE_URL, '/market-overview', {
+    params: { sections: 'brief,sentiment' },
+    timeoutMs: 8_000,
+  }).then(normaliseOverview);
+}
+
+export type MarketOverviewAi = Pick<
+  MarketOverview,
+  'ai_brief' | 'regime' | 'leading_sectors' | 'lagging_sectors' | 'news_sentiment'
+>;
+
+export function getMarketOverviewAi(): Promise<MarketOverviewAi> {
+  return httpJson<_RawOverview>(BASE_URL, '/market-overview', {
+    params: { sections: 'ai_summary' },
+    timeoutMs: 25_000,
+  }).then((raw) => ({
+    ai_brief: raw.ai_summary?.brief,
+    regime: raw.ai_summary?.macro_regime,
+    leading_sectors: raw.ai_summary?.leading_sectors,
+    lagging_sectors: raw.ai_summary?.lagging_sectors,
+    news_sentiment: raw.ai_summary?.news_sentiment,
+  }));
 }
 
 export function getMacroPulse(): Promise<MacroPulse> {
