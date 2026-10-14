@@ -18,14 +18,23 @@ const SURFACE = 'mobile';
 
 export type GetToken = () => Promise<string | null>;
 
+/** A stalled request must not block the serialized sync queue behind it. */
+export const REQUEST_TIMEOUT_MS = 10_000;
+
 async function postJson(path: string, body: unknown, getToken: GetToken): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const token = await getToken();
+    const token = await Promise.race([
+      getToken(),
+      new Promise<null>((resolve) => controller.signal.addEventListener('abort', () => resolve(null))),
+    ]);
     if (!token) return false;
     const res = await fetch(`${PORTAL_URL}${path}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
     if (!res.ok) {
       console.warn(`[portalConsent] ${path} responded ${res.status}`);
@@ -33,8 +42,10 @@ async function postJson(path: string, body: unknown, getToken: GetToken): Promis
     }
     return true;
   } catch {
-    console.warn(`[portalConsent] ${path} request failed`);
+    console.warn(`[portalConsent] ${path} request failed or timed out`);
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

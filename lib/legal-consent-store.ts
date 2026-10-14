@@ -15,10 +15,24 @@ const PENDING_KEY = 'nu_legal_consent_pending';
 /** The box is ticked in the same flow that creates the session. */
 export const PENDING_LEGAL_TTL_MS = 15 * 60 * 1000;
 
+/** A bound, still-unsynced acceptance outlives sign-out for this long. */
+export const BOUND_LEGAL_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+const BOUND_KEY_PREFIX = 'nu_legal_consent_bound_';
+
 export interface PendingLegalConsent {
   events: Array<{ doc: string; version: string }>;
   ts: string;
   nonce: string;
+}
+
+/** An acceptance consumed under one Clerk user; only that user may post it. */
+export interface BoundLegalConsent extends PendingLegalConsent {
+  userId: string;
+}
+
+function boundKey(userId: string): string {
+  return BOUND_KEY_PREFIX + userId.replace(/[^A-Za-z0-9._-]/g, '_');
 }
 
 function newNonce(): string {
@@ -98,4 +112,52 @@ export async function takeFreshPendingLegalConsent(now: number = Date.now()): Pr
     return null;
   }
   return pending;
+}
+
+/**
+ * Step unbound -> bound: consume a FRESH (<= TTL) pending acceptance under
+ * `userId` and persist it under a per-user key, so sign-out or a switch to
+ * another account cannot lose it or reassign it. Returns the bound record.
+ */
+export async function bindFreshPendingLegalConsent(userId: string): Promise<BoundLegalConsent | null> {
+  const pending = await takeFreshPendingLegalConsent();
+  if (!pending) return null;
+  const bound: BoundLegalConsent = { ...pending, userId };
+  try {
+    await SecureStore.setItemAsync(boundKey(userId), JSON.stringify(bound));
+  } catch {
+    return null; // leave the unbound record in place; the TTL still applies
+  }
+  await clearPendingLegalConsentIfNonce(pending.nonce);
+  return bound;
+}
+
+/** The unsynced acceptance bound to exactly this user, or null (expired ones are dropped). */
+export async function readBoundLegalConsent(userId: string, now: number = Date.now()): Promise<BoundLegalConsent | null> {
+  try {
+    const raw = await SecureStore.getItemAsync(boundKey(userId));
+    if (!raw) return null;
+    const obj = JSON.parse(raw) as Partial<BoundLegalConsent>;
+    const age = now - Date.parse(obj.ts ?? '');
+    const valid =
+      obj.userId === userId && typeof obj.nonce === 'string' && Number.isFinite(age) && age >= 0 && age <= BOUND_LEGAL_MAX_AGE_MS;
+    if (!valid) {
+      await SecureStore.deleteItemAsync(boundKey(userId));
+      return null;
+    }
+    return obj as BoundLegalConsent;
+  } catch {
+    return null;
+  }
+}
+
+/** Remove the bound record after it was delivered (nonce-checked; same residual window as above). */
+export async function clearBoundLegalConsent(userId: string, nonce: string): Promise<void> {
+  const current = await readBoundLegalConsent(userId);
+  if (!current || current.nonce !== nonce) return;
+  try {
+    await SecureStore.deleteItemAsync(boundKey(userId));
+  } catch {
+    /* best-effort */
+  }
 }
