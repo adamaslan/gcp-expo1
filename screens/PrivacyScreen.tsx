@@ -34,7 +34,8 @@ import {
 } from '../lib/clients/portalPrivacy';
 
 interface Props {
-  onBack?: () => void;
+  /** Dismiss the screen (host renders it in a Modal). */
+  onClose?: () => void;
 }
 
 type Busy = null | 'export' | 'rectify' | 'preview' | 'delete';
@@ -74,7 +75,7 @@ function summarizeExport(data: PrivacyExport): Array<[string, number]> {
   return sections.map(([name, rows]) => [name, Array.isArray(rows) ? rows.length : 0]);
 }
 
-export default function PrivacyScreen({ onBack }: Props) {
+export default function PrivacyScreen({ onClose }: Props) {
   const { getToken, isSignedIn } = useAuth();
   const { signOut } = useAuthContext();
   const [busy, setBusy] = useState<Busy>(null);
@@ -242,9 +243,9 @@ export default function PrivacyScreen({ onBack }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {onBack && (
-        <Pressable onPress={onBack} accessibilityRole="button" style={styles.backRow}>
-          <Text style={styles.backText}>{'< Back'}</Text>
+      {onClose && (
+        <Pressable onPress={onClose} accessibilityRole="button" style={styles.backRow}>
+          <Text style={styles.backText}>{'< Close'}</Text>
         </Pressable>
       )}
       <Text style={styles.title}>Privacy & data</Text>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Text, ActivityIndicator, SafeAreaView, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, ActivityIndicator, SafeAreaView, ScrollView, Modal } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { AuthProvider } from './lib/auth-provider';
@@ -10,6 +10,7 @@ import HoldFoldScreen from './screens/HoldFoldScreen';
 import ChatScreen from './screens/ChatScreen';
 import SignInScreen from './screens/SignInScreen';
 import { ConsentSheet } from './components/ConsentSheet';
+import PrivacyScreen from './screens/PrivacyScreen';
 import TabBar, { type TabKey } from './components/TabBar';
 import { theme } from './lib/ui/theme';
 import { validateConfig } from './lib/config-validator';
@@ -46,6 +47,7 @@ function AppRoot() {
   const { isLoaded, isSignedIn, signOut } = useAuth();
   const [tab, setTab] = useState<TabKey>('briefing');
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
   // Track sign-in timestamp and enforce a 1-hour hard cap. Defense-in-depth
@@ -118,11 +120,16 @@ function AppRoot() {
   return (
     <SafeAreaView style={styles.shell}>
       <View style={styles.screenWrap}>
-        {tab === 'briefing' && <BriefingScreen />}
+        {tab === 'briefing' && <BriefingScreen onOpenPrivacy={() => setPrivacyOpen(true)} />}
         {tab === 'trade' && <HoldFoldScreen />}
         {tab === 'chat' && <ChatScreen />}
       </View>
       <TabBar active={tab} onChange={setTab} />
+      <Modal visible={privacyOpen} animationType="slide" onRequestClose={() => setPrivacyOpen(false)}>
+        <SafeAreaView style={styles.shell}>
+          <PrivacyScreen onClose={() => setPrivacyOpen(false)} />
+        </SafeAreaView>
+      </Modal>
       <StatusBar style="light" />
     </SafeAreaView>
   );

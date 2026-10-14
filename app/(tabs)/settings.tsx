@@ -9,7 +9,6 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useUser } from '@clerk/clerk-expo';
 import { useAuthContext } from '@/lib/auth-provider';
 import { theme } from '@/lib/ui/theme';
@@ -19,7 +18,6 @@ const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL ?? 'https://financial.nuwr
 export default function SettingsScreen() {
   const { user, isLoaded } = useUser();
   const { signOut } = useAuthContext();
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   if (!isLoaded || !user) {
@@ -126,9 +124,6 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Links</Text>
-        <TouchableOpacity style={styles.link} onPress={() => router.push('/privacy')}>
-          <Text style={styles.linkText}>Privacy & data</Text>
-        </TouchableOpacity>
         <TouchableOpacity
           style={styles.link}
           onPress={() => Linking.openURL(`${PORTAL_URL}/privacy-policy`)}
