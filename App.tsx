@@ -14,6 +14,7 @@ import PrivacyScreen from './screens/PrivacyScreen';
 import TabBar, { type TabKey } from './components/TabBar';
 import { theme } from './lib/ui/theme';
 import { validateConfig } from './lib/config-validator';
+import { useAttributionCapture } from './lib/useAttributionCapture';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -50,6 +51,7 @@ function AppRoot() {
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const { accountDeletedPendingSignOut, isLoaded: authContextReady } = useAuthContext();
   const insets = useSafeAreaInsets();
+  useAttributionCapture();
 
   // Track sign-in timestamp and enforce a 1-hour hard cap. Defense-in-depth
   // alongside Clerk Dashboard session-lifetime config (see PRODUCTION_CLERK.md).
