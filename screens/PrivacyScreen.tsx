@@ -97,6 +97,9 @@ export default function PrivacyScreen({ onClose }: Props) {
   const [preview, setPreview] = useState<DeletionPreview | null>(null);
   const [previewExpiresAt, setPreviewExpiresAt] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // Set once erasure succeeded but sign-out failed: blocks the screen, never re-deletes.
+  const [signOutPending, setSignOutPending] = useState(false);
+  const [signOutRetrying, setSignOutRetrying] = useState(false);
 
   const requireToken = useCallback(async (): Promise<string> => {
     const token = await getToken();
@@ -183,10 +186,13 @@ export default function PrivacyScreen({ onClose }: Props) {
     try {
       const result = await confirmAccountDeletion(await requireToken(), deletionToken);
       // Data is gone and the Clerk user is normally deleted; end the local session either way.
+      // auth-provider's signOut clears the cached session/token even when Clerk's call throws.
       try {
         await signOut();
       } catch (signOutErr) {
         console.warn('Sign-out after account deletion failed:', signOutErr);
+        if (mounted.current) setSignOutPending(true);
+        return;
       }
       if (!result.clerk_account_deleted) {
         Alert.alert(
@@ -223,6 +229,38 @@ export default function PrivacyScreen({ onClose }: Props) {
       ],
     );
   };
+
+  const handleRetrySignOut = async () => {
+    setSignOutRetrying(true);
+    try {
+      await signOut();
+    } catch (err) {
+      console.warn('Sign-out retry failed:', err);
+    } finally {
+      if (mounted.current) setSignOutRetrying(false);
+    }
+  };
+
+  if (signOutPending) {
+    return (
+      <View style={[styles.container, styles.blocking]}>
+        <Text style={styles.title}>Your account was deleted</Text>
+        <Text style={styles.body}>Signing out failed. Tap to retry — you cannot continue until you are signed out.</Text>
+        <Pressable
+          style={[styles.button, signOutRetrying && styles.disabled]}
+          onPress={handleRetrySignOut}
+          disabled={signOutRetrying}
+          accessibilityRole="button"
+        >
+          {signOutRetrying ? (
+            <ActivityIndicator color={theme.text.inverse} />
+          ) : (
+            <Text style={styles.buttonText}>Retry sign out</Text>
+          )}
+        </Pressable>
+      </View>
+    );
+  }
 
   if (!isSignedIn) {
     return (
@@ -394,6 +432,7 @@ export default function PrivacyScreen({ onClose }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bg.base },
+  blocking: { justifyContent: 'center', padding: spacing.xl },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   backRow: { paddingVertical: spacing.sm },
   backText: { color: theme.accent.indigo, fontSize: 14 },
