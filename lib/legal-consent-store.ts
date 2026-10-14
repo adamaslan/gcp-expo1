@@ -43,12 +43,30 @@ export async function markLegalConsentAccepted(now: Date = new Date()): Promise<
   }
 }
 
-export async function clearPendingLegalConsent(nonce?: string): Promise<void> {
+/**
+ * Unconditional single delete — no read, so a concurrent new write cannot be
+ * erased between a read and a delete. Use for sign-out / identity change.
+ */
+export async function clearPendingLegalConsent(): Promise<void> {
   try {
-    if (nonce) {
-      const current = await readPending();
-      if (current && current.nonce !== nonce) return; // a newer acceptance replaced it
-    }
+    await SecureStore.deleteItemAsync(PENDING_KEY);
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * Delete only if the stored record is still `nonce`. SecureStore has no atomic
+ * compare-and-delete, so this is read-then-delete: a write landing between the
+ * two steps can still be erased. The window is a few ms and only reachable by
+ * a new sign-in racing a just-finished post; the sync hook's generation guard
+ * makes that sequence unlikely, and the failure mode is a missing (never a
+ * misassigned) acceptance.
+ */
+export async function clearPendingLegalConsentIfNonce(nonce: string): Promise<void> {
+  try {
+    const current = await readPending();
+    if (!current || current.nonce !== nonce) return;
     await SecureStore.deleteItemAsync(PENDING_KEY);
   } catch {
     /* best-effort */
@@ -73,13 +91,10 @@ async function readPending(): Promise<PendingLegalConsent | null> {
  */
 export async function takeFreshPendingLegalConsent(now: number = Date.now()): Promise<PendingLegalConsent | null> {
   const pending = await readPending();
-  if (!pending) {
-    await clearPendingLegalConsent();
-    return null;
-  }
+  if (!pending) return null;
   const age = now - Date.parse(pending.ts);
   if (!Number.isFinite(age) || age < 0 || age > PENDING_LEGAL_TTL_MS) {
-    await clearPendingLegalConsent();
+    await clearPendingLegalConsentIfNonce(pending.nonce);
     return null;
   }
   return pending;
