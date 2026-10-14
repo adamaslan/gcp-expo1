@@ -17,6 +17,8 @@ needs to close the gap. Portal mirror:
 
 **2026-10-12 portal slowness assessment:** portal `app/dashboard/page.tsx` now requests `/market-overview?sections=brief`, and the earlier portal PR #269 bounded the homepage's optional council sample fetch at 5 seconds in `app/page.tsx`; that bound was later replaced by portal PR #281, which reads the stored sample instead, so current `app/page.tsx` calls `getCouncilSample()` with no timeout. No feature domain or shared module is added, removed, or edited; no interactive council budget changes. For this change, the existing domain matrix and recorded feature-domain ≈76%, code-identical ≈40%, blended ~62% figures remain unchanged. This is a scoped change assessment, not a fresh audit of all shared modules. Mobile’s existing full-overview briefing and council implementation remain separate; no new mobile port or de-drift item is introduced.
 
+**2026-10-14 mobile overview timeout fix:** mobile-only change in `lib/clients/gcp3.ts` and `BriefingScreen`; it splits the fast overview call (`brief,sentiment`) from the slow `ai_summary` call, replacing the unscoped fetch that always timed out (see [[concept-sync-requirements]] performance note, and the stale "still fetches the unscoped" remark in the 2026-07-30 entry below, now resolved). No `lib/shared` module is added, removed or edited, and no feature domain changes, so the domain matrix and the ~62% headline are unchanged.
+
 NuWrrrld Financial ships as **two surfaces over one product**: this Expo/React
 Native app (`gcp3-mobile`) and the Next.js 16 portal (`nuwrrrld-portal`). Both
 authenticate with Clerk, entitle off `publicMetadata.subscription_status`, and
