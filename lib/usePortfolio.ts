@@ -93,10 +93,18 @@ export function usePortfolio(): PortfolioState {
           // Surface any fetch errors.
           if (!hRes.ok && !sRes.ok && !wRes.ok) {
             setError('Failed to load portfolio data');
+          } else if (hRes.ok && hRes.status !== 204 && !isPortfolioHealth(hData)) {
+            // A 200 that fails the guard is a response-contract failure; show
+            // it through the error UI rather than the empty-watchlist copy.
+            setError('Health score response was invalid');
           }
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load portfolio');
+        if (!cancelled) {
+          // No stale score may survive a failed fetch (e.g. health JSON parse threw).
+          setHealth(null);
+          setError(err instanceof Error ? err.message : 'Failed to load portfolio');
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
