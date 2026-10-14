@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Text, ActivityIndicator, SafeAreaView, ScrollView, Modal } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
-import { AuthProvider } from './lib/auth-provider';
+import { AuthProvider, useAuthContext } from './lib/auth-provider';
 import * as SecureStore from './lib/secure-storage';
 import BriefingScreen from './screens/BriefingScreen';
 import HoldFoldScreen from './screens/HoldFoldScreen';
@@ -48,6 +48,7 @@ function AppRoot() {
   const [tab, setTab] = useState<TabKey>('briefing');
   const [sessionExpired, setSessionExpired] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const { accountDeletedPendingSignOut } = useAuthContext();
   const insets = useSafeAreaInsets();
 
   // Track sign-in timestamp and enforce a 1-hour hard cap. Defense-in-depth
@@ -101,6 +102,15 @@ function AppRoot() {
     );
   }
 
+  // Account erased but sign-out failed: only the blocking retry view is reachable.
+  if (accountDeletedPendingSignOut) {
+    return (
+      <SafeAreaView style={styles.shell}>
+        <PrivacyScreen />
+      </SafeAreaView>
+    );
+  }
+
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === 'true';
 
   if (!isSignedIn && !demoMode) {
@@ -125,7 +135,7 @@ function AppRoot() {
         {tab === 'chat' && <ChatScreen />}
       </View>
       <TabBar active={tab} onChange={setTab} />
-      <Modal visible={privacyOpen} animationType="slide" onRequestClose={() => setPrivacyOpen(false)}>
+      <Modal visible={privacyOpen} animationType="slide" onRequestClose={() => { if (!accountDeletedPendingSignOut) setPrivacyOpen(false); }}>
         <SafeAreaView style={styles.shell}>
           <PrivacyScreen onClose={() => setPrivacyOpen(false)} />
         </SafeAreaView>

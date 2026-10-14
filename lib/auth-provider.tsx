@@ -12,6 +12,13 @@ interface AuthContextType {
   userEmail: string | null;
   sessionToken: string | null;
   signOut: () => Promise<void>;
+  /**
+   * True once account erasure succeeded but sign-out failed. Lives here (not in a
+   * screen) so it survives dismissing/remounting the privacy modal; cleared only
+   * when signOut succeeds.
+   */
+  accountDeletedPendingSignOut: boolean;
+  setAccountDeletedPendingSignOut: (pending: boolean) => void;
   retry: (fn: () => Promise<void>) => Promise<void>;
 }
 
@@ -27,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [accountDeletedPendingSignOut, setAccountDeletedPendingSignOut] = useState(false);
   const prevSessionStatus = useRef<string | null>(null);
 
   useEffect(() => {
@@ -110,7 +118,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signOut() {
     try {
       await clerkSignOut();
+      setAccountDeletedPendingSignOut(false);
     } finally {
+      // If Clerk's signOut throws after an account deletion, the Clerk session is
+      // already invalid server-side (the portal deletes the Clerk user last, after
+      // the DB cascade), so re-populated cached tokens cannot authenticate.
       await Promise.allSettled([
         SecureStore.deleteItemAsync(SESSION_CACHE_KEY),
         SecureStore.deleteItemAsync(TOKEN_CACHE_KEY),
@@ -138,6 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userEmail: user?.emailAddresses?.[0]?.emailAddress || null,
     sessionToken,
     signOut,
+    accountDeletedPendingSignOut,
+    setAccountDeletedPendingSignOut,
     retry,
   };
 

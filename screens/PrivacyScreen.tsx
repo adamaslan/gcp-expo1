@@ -77,7 +77,7 @@ function summarizeExport(data: PrivacyExport): Array<[string, number]> {
 
 export default function PrivacyScreen({ onClose }: Props) {
   const { getToken, isSignedIn } = useAuth();
-  const { signOut } = useAuthContext();
+  const { signOut, accountDeletedPendingSignOut: signOutPending, setAccountDeletedPendingSignOut } = useAuthContext();
   const [busy, setBusy] = useState<Busy>(null);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
@@ -97,8 +97,6 @@ export default function PrivacyScreen({ onClose }: Props) {
   const [preview, setPreview] = useState<DeletionPreview | null>(null);
   const [previewExpiresAt, setPreviewExpiresAt] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  // Set once erasure succeeded but sign-out failed: blocks the screen, never re-deletes.
-  const [signOutPending, setSignOutPending] = useState(false);
   const [signOutRetrying, setSignOutRetrying] = useState(false);
 
   const requireToken = useCallback(async (): Promise<string> => {
@@ -191,7 +189,8 @@ export default function PrivacyScreen({ onClose }: Props) {
         await signOut();
       } catch (signOutErr) {
         console.warn('Sign-out after account deletion failed:', signOutErr);
-        if (mounted.current) setSignOutPending(true);
+        // Lifted into the auth context so the block outlives this screen; never re-deletes.
+        setAccountDeletedPendingSignOut(true);
         return;
       }
       if (!result.clerk_account_deleted) {
