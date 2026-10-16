@@ -11,11 +11,11 @@ Companion page: [[concept-mobile-web-parity]] — the current ~62% measurement t
 page is a plan to raise. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-sync-requirements.md`.
 
-## Portal PR #291 — cloud credential preflight
+## Portal PR #291 and homebase PR #8 — cloud credential preflight
 
 The portal's manual GCP provider check adds no mobile client feature or
 shared-module change, so there is no port or de-drift task here. Its remaining
-work is cloud isolation and a shared rate-budget path for later scheduled
+work is billing and applying the isolated Terraform foundation, plus a shared rate-budget path for later scheduled
 ingestion. The ~62% parity headline and domain requirements below remain
 unchanged.
 

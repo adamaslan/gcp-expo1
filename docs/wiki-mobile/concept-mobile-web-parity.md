@@ -11,12 +11,13 @@ Companion page: [[concept-sync-requirements]] — the concrete work each surface
 needs to close the gap. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-mobile-web-parity.md`.
 
-## Portal PR #291 assessment — 2026-10-15
+## Portal PR #291 and homebase PR #8 assessment — 2026-10-15
 
 **Headline remains ~62% synced.** The portal added a manual GCP credential
 preflight that reads one Alpaca bar and OpenRouter key metadata. It changes no
 mobile or portal client, shared module, response contract, or feature domain.
-This is a scoped PR assessment, not a new parity audit; the domain matrix
+Homebase PR #8 adds an unapplied Terraform foundation for a dedicated slot,
+also without client changes. This is a scoped PR assessment, not a new parity audit; the domain matrix
 below and its denominator remain unchanged.
 
 | Operational dimension (outside the domain matrix) | Portal/GCP | Mobile impact |
