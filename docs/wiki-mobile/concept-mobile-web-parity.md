@@ -11,6 +11,15 @@ Companion page: [[concept-sync-requirements]] — the concrete work each surface
 needs to close the gap. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-mobile-web-parity.md`.
 
+## Portal PRs #293 and #294 — 2026-10-16
+
+The portal's followed-ticker observer and paper portfolio workflows now use
+New York timezone schedules instead of paired seasonal UTC schedules. This
+reduces workflow starts while keeping the intended local slots. Neither PR
+changes a mobile feature, API contract, or shared module. The historical
+~62% headline and feature-domain matrix remain unchanged; this is a scoped
+assessment rather than a fresh parity audit.
+
 > ℹ️ **Mobile PR feat/mobile-dsar (2026-10-14) — builds the mobile data-subject-rights path, headline stays ~62% (percentages not recomputed).** The portal's `/api/privacy/{export,profile,rectify,delete}` routes (delete is a two-step preview-token plus explicit confirm flow) had no mobile caller, the largest compliance asymmetry in the matrix. The app now has a typed client (`lib/clients/portalPrivacy.ts`, Clerk Bearer token supplied by the caller, 429 surfaced as a retry-after) and a "Privacy & data" screen (`screens/PrivacyScreen.tsx`: export, correction request, two-step deletion, and a blocking sign-out-retry view if sign-out fails after a successful erasure). It is reachable from the live shell only: Briefing → Account card → "Privacy & data" → full-screen Modal in `App.tsx`; the `app/` expo-router tree is dead code, so nothing was added there. The DSAR row moves from portal-only to partial. **Unverified:** nothing ran on a device or against the deployed portal; whether the portal's edge `auth.protect()` accepts a Clerk mobile Bearer token on these routes is unconfirmed (it does for the subscription route); large-export share behaviour on Android is untested. Open portal-side item: `/api/privacy/rectify` is absent from the portal proxy matcher and relies only on its handler's `auth()`.
 
 > ℹ️ **Mobile PR fix/portfolio-health-guard (2026-10-14) — repairs existing parity, headline unchanged at ~62%.** `lib/portfolio.ts` had silently drifted from the portal's copy (about 30 lines): the portal added runtime guards (`isHealthFactor()` / `isPortfolioHealth()`) so an unadapted upstream payload cannot render as a silent "score 0 / Grade F" (see the portal's 2026-07-26 portfolio-health-endpoint-missing incident). This matrix had listed the file as "identical", but it was never drift-gated, so CI could not see the drift. The PR ports the file byte-identically, makes `usePortfolio` validate the health response (an invalid payload goes to the hook's existing error state; a failed fetch clears stale health), and adds `lib/portfolio.ts` and `lib/retention.ts` to the mobile drift gate (now 13 gated files). The portal's gate still needs the mirror entries (portal PR pending; `portfolio.ts` only after this merges). `lib/nuai.ts` stays divergent and ungated, a separate known item. The single-source figure was likely overstated before this fix; percentages not recomputed.
