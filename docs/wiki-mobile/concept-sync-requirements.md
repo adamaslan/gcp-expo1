@@ -11,6 +11,14 @@ Companion page: [[concept-mobile-web-parity]] — the current ~62% measurement t
 page is a plan to raise. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-sync-requirements.md`.
 
+## Portal PR #291 — cloud credential preflight
+
+The portal's manual GCP provider check adds no mobile client feature or
+shared-module change, so there is no port or de-drift task here. Its remaining
+work is cloud isolation and a shared rate-budget path for later scheduled
+ingestion. The ~62% parity headline and domain requirements below remain
+unchanged.
+
 ## The pattern
 
 **2026-10-12 portal slowness assessment:** portal `app/dashboard/page.tsx` now requests `/market-overview?sections=brief`, and the earlier portal PR #269 bounded the homepage's optional council sample fetch at 5 seconds in `app/page.tsx`; that bound was later replaced by portal PR #281, which reads the stored sample instead, so current `app/page.tsx` calls `getCouncilSample()` with no timeout. No feature domain or shared module is added, removed, or edited; no interactive council budget changes. For this change, the existing domain matrix and recorded feature-domain ≈76%, code-identical ≈40%, blended ~62% figures remain unchanged. This is a scoped change assessment, not a fresh audit of all shared modules. Mobile’s existing full-overview briefing and council implementation remain separate; no new mobile port or de-drift item is introduced.
