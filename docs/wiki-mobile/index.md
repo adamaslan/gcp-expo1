@@ -1,6 +1,13 @@
 # Wiki Index — gcp3-mobile
 
-_Last updated: 2026-10-12 (portal dashboard/homepage slowness assessment; parity metrics unchanged for this change)_
+_Last updated: 2026-10-15 (portal PR #292 Terraform foundation; parity remains ~62%)_
+
+**Portal PR #292 scope:** its Terraform and architecture document add no client or shared-module change. [[concept-mobile-web-parity]] and [[concept-sync-requirements]] record the unchanged ~62% headline and domain matrix.
+
+**Portal PR #291 and homebase PR #8 scope:** the manual GCP provider check and
+unapplied Terraform foundation change no client or
+shared module. The [[concept-mobile-web-parity]] domain matrix remains
+unchanged, and [[concept-sync-requirements]] adds no mobile port.
 
 **2026-10-12 portal slowness assessment:** portal `app/dashboard/page.tsx` now requests `/market-overview?sections=brief`, and the earlier portal PR #269 bounded the homepage's optional council sample fetch at 5 seconds in `app/page.tsx`; that bound was later replaced by portal PR #281, which reads the stored sample instead, so current `app/page.tsx` calls `getCouncilSample()` with no timeout. No feature domain or shared module is added, removed, or edited; no interactive council budget changes. For this change, the existing domain matrix and recorded feature-domain ≈76%, code-identical ≈40%, blended ~62% figures remain unchanged. This is a scoped change assessment, not a fresh audit of all shared modules. Mobile’s existing full-overview briefing and council implementation remain separate; no new mobile port or de-drift item is introduced. See [[concept-mobile-web-parity]] and [[concept-sync-requirements]].
 

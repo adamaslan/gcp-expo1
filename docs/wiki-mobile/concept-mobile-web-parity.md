@@ -7,9 +7,26 @@ sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrr
 
 # Concept — Mobile ⇄ Web Parity (% Synced)
 
+## Portal PR #292 assessment — 2026-10-15
+
+The portal now owns the new pipeline Terraform foundation and reviewed status document. This is infrastructure and documentation only: no client feature, API contract, or shared application module changed. The historical ~62% headline and existing domain matrix remain unchanged; this is a scoped assessment, not a new audit. The dedicated project's billing gate still prevents a cloud Terraform apply.
+
 Companion page: [[concept-sync-requirements]] — the concrete work each surface
 needs to close the gap. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-mobile-web-parity.md`.
+
+## Portal PR #291 and homebase PR #8 assessment — 2026-10-15
+
+**Headline remains ~62% synced.** The portal added a manual GCP credential
+preflight that reads one Alpaca bar and OpenRouter key metadata. It changes no
+mobile or portal client, shared module, response contract, or feature domain.
+Homebase PR #8 adds an unapplied Terraform foundation for a dedicated slot,
+also without client changes. This is a scoped PR assessment, not a new parity audit; the domain matrix
+below and its denominator remain unchanged.
+
+| Operational dimension (outside the domain matrix) | Portal/GCP | Mobile impact |
+| --- | --- | --- |
+| Provider credential preflight | Manual read-only job, no data publication | No mobile implementation or parity movement |
 
 > ℹ️ **Mobile PR feat/mobile-dsar (2026-10-14) — builds the mobile data-subject-rights path, headline stays ~62% (percentages not recomputed).** The portal's `/api/privacy/{export,profile,rectify,delete}` routes (delete is a two-step preview-token plus explicit confirm flow) had no mobile caller, the largest compliance asymmetry in the matrix. The app now has a typed client (`lib/clients/portalPrivacy.ts`, Clerk Bearer token supplied by the caller, 429 surfaced as a retry-after) and a "Privacy & data" screen (`screens/PrivacyScreen.tsx`: export, correction request, two-step deletion, and a blocking sign-out-retry view if sign-out fails after a successful erasure). It is reachable from the live shell only: Briefing → Account card → "Privacy & data" → full-screen Modal in `App.tsx`; the `app/` expo-router tree is dead code, so nothing was added there. The DSAR row moves from portal-only to partial. **Unverified:** nothing ran on a device or against the deployed portal; whether the portal's edge `auth.protect()` accepts a Clerk mobile Bearer token on these routes is unconfirmed (it does for the subscription route); large-export share behaviour on Android is untested. Open portal-side item: `/api/privacy/rectify` is absent from the portal proxy matcher and relies only on its handler's `auth()`.
 
