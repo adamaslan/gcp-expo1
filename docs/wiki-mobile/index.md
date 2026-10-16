@@ -1,6 +1,8 @@
 # Wiki Index — gcp3-mobile
 
-_Last updated: 2026-10-15 (portal PR #291 credential preflight; parity remains ~62%)_
+_Last updated: 2026-10-15 (portal PR #292 Terraform foundation; parity remains ~62%)_
+
+**Portal PR #292 scope:** its Terraform and architecture document add no client or shared-module change. [[concept-mobile-web-parity]] and [[concept-sync-requirements]] record the unchanged ~62% headline and domain matrix.
 
 **Portal PR #291 and homebase PR #8 scope:** the manual GCP provider check and
 unapplied Terraform foundation change no client or

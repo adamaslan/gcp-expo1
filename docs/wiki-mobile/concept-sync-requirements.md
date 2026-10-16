@@ -7,6 +7,10 @@ sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrr
 
 # Concept — What Each Surface Needs to Sync
 
+## Portal PR #292 — Terraform foundation
+
+The NWF portal's new pipeline Terraform and deployment document create no mobile port or de-drift requirement. The ~62% headline and existing domain requirements remain unchanged. Any later user-facing pipeline output needs a separate API and mobile parity assessment.
+
 Companion page: [[concept-mobile-web-parity]] — the current ~62% measurement this
 page is a plan to raise. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-sync-requirements.md`.

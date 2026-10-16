@@ -7,6 +7,10 @@ sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrr
 
 # Concept — Mobile ⇄ Web Parity (% Synced)
 
+## Portal PR #292 assessment — 2026-10-15
+
+The portal now owns the new pipeline Terraform foundation and reviewed status document. This is infrastructure and documentation only: no client feature, API contract, or shared application module changed. The historical ~62% headline and existing domain matrix remain unchanged; this is a scoped assessment, not a new audit. The dedicated project's billing gate still prevents a cloud Terraform apply.
+
 Companion page: [[concept-sync-requirements]] — the concrete work each surface
 needs to close the gap. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-mobile-web-parity.md`.
