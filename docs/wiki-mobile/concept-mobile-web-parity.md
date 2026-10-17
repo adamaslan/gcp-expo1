@@ -11,12 +11,12 @@ Companion page: [[concept-sync-requirements]] — the concrete work each surface
 needs to close the gap. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-mobile-web-parity.md`.
 
-## Portal PR #293 — 2026-10-16
+## Portal PR #293 — 2026-10-17
 
 The portal's followed-ticker observer and paper portfolio workflows now use
 New York timezone schedules instead of paired seasonal UTC schedules. This
 reduces workflow starts while keeping the intended local slots. The PR
-changes a mobile feature, API contract, or shared module. The historical
+changes no mobile feature, API contract, or shared module. The historical
 ~62% headline and feature-domain matrix remain unchanged; this is a scoped
 assessment rather than a fresh parity audit.
 

@@ -16,7 +16,7 @@ page is a plan to raise. Portal mirror:
 The portal has one 16:30 New York schedule for followed-ticker tracking and
 four local-time paper portfolio slots. These workflow-only changes create no
 mobile port or shared-code sync task. Production run timing still needs
-observation after the portal PRs merge.
+observation after the portal PR #293 merge.
 
 ## The pattern
 
