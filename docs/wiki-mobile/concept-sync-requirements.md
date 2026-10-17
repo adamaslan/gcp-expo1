@@ -11,7 +11,7 @@ Companion page: [[concept-mobile-web-parity]] — the current ~62% measurement t
 page is a plan to raise. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-sync-requirements.md`.
 
-## Portal PRs #293 and #294 — scheduling
+## Portal PR #293 — scheduling
 
 The portal has one 16:30 New York schedule for followed-ticker tracking and
 four local-time paper portfolio slots. These workflow-only changes create no
