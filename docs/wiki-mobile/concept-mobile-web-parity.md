@@ -2,10 +2,19 @@
 date: 2026-10-14
 type: concept
 tags: [sync, parity, mobile, web, cross-surface, shared]
-sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrrrld-portal/app, nuwrrrld-portal/app/dashboard/page.tsx, nuwrrrld-portal/app/page.tsx]
+sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrrrld-portal/app, nuwrrrld-portal/app/dashboard/page.tsx, nuwrrrld-portal/app/page.tsx, nuwrrrld-portal/docs/r02-safe-data-backup-audit-2026-10-21.md]
 ---
 
 # Concept — Mobile ⇄ Web Parity (% Synced)
+
+## Portal PR #306 — 2026-10-21
+
+The portal R02 audit records Neon development-branch lineage, snapshot and
+restore gaps, and the production-host guard's limits. It changes only portal
+documentation and wiki pages; no mobile client, shared module, or API contract
+changed. The historical ~62% headline and feature matrix remain unchanged.
+This is a scoped review, not a fresh parity measurement; no mobile port is
+required. See `nuwrrrld-portal/docs/r02-safe-data-backup-audit-2026-10-21.md`.
 
 Companion page: [[concept-sync-requirements]] — the concrete work each surface
 needs to close the gap. Portal mirror:

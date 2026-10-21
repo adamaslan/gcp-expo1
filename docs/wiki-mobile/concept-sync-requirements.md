@@ -2,10 +2,18 @@
 date: 2026-10-12
 type: concept
 tags: [sync, parity, requirements, roadmap, mobile, web, shared]
-sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrrrld-portal/app/dashboard/page.tsx, nuwrrrld-portal/app/page.tsx]
+sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrrrld-portal/app/dashboard/page.tsx, nuwrrrld-portal/app/page.tsx, nuwrrrld-portal/docs/r02-safe-data-backup-audit-2026-10-21.md]
 ---
 
 # Concept — What Each Surface Needs to Sync
+
+## Portal PR #306 — backup safety, no mobile port
+
+The portal's R02 audit concerns Neon branch safety, snapshots, backup retention,
+and restore rehearsal. It changes no mobile app behavior or shared client code.
+The parity plan and recorded headline remain unchanged; the audit's human
+approval and restore steps stay with the portal data owners. See
+`nuwrrrld-portal/docs/r02-safe-data-backup-audit-2026-10-21.md`.
 
 Companion page: [[concept-mobile-web-parity]] — the current ~62% measurement this
 page is a plan to raise. Portal mirror:
