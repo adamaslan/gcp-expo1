@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TextInput, TouchableOpacity } from 'react-native';
 import { theme } from '../lib/ui/theme';
 import { useDigest } from '../lib/useDigest';
+import { signalsRunHeader } from '../lib/digest';
 import { SignalDigestCard } from '../components/SignalDigestCard';
 import { StateView } from '../components/StateView';
 import { useSubscription, useEntitlement } from '../lib/useSubscription';
@@ -66,7 +67,7 @@ export default function DigestScreen() {
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
     >
       <View style={styles.header}>
-        <Text style={styles.period}>{digest.periodLabel}</Text>
+        <Text style={styles.period}>{signalsRunHeader(digest)}</Text>
         <Text style={styles.count}>{filtered.length} signal{filtered.length !== 1 ? 's' : ''}</Text>
       </View>
       {digest.degraded && (
