@@ -204,3 +204,7 @@ lands in:
 - [[entity-signals-digest]] · [[entity-nuai]] · [[entity-portfolio]] · [[entity-council-composer]] · [[entity-billing]]
 - [[overview#open-issues]] — open-issue #6 (adapter divergence)
 - `nuwrrrld-portal/docs/wiki-portal/concept-sync-requirements.md` — the portal mirror
+
+## Drift-gate pairing — 2026-11-05 (candidate, gcp-expo1 PR #62)
+
+A pairing-aware resolver for the shared-core gate is on draft PR #62 (`fix/drift-pair-resolver`, mirror of nuwrrrld-portal #337). It is **not active**: `shared-drift-check` still compares against the portal default branch, and pairing is not wired onto the open portal #327 or this repo's #61. The 13-file gated set is unchanged. Feature-domain parity and the blended headline are unchanged; no requirement percentage was recomputed. The candidate workflow is staged at `scripts/drift-pair/activation/` and applies only after the helpers reach trusted main.
