@@ -25,3 +25,4 @@ jobs:
         run: |
           node --test scripts/drift-pair/resolve-pair.test.mjs
           node --test scripts/drift-pair/comparator-controls.test.mjs
+          node --test scripts/drift-pair/activation.test.mjs
