@@ -2,7 +2,7 @@
 date: 2026-10-12
 type: concept
 tags: [sync, parity, requirements, roadmap, mobile, web, shared]
-sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrrrld-portal/app/dashboard/page.tsx, nuwrrrld-portal/app/page.tsx]
+sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrrrld-portal/app/dashboard/page.tsx, nuwrrrld-portal/app/page.tsx, PR#400, PR#401]
 ---
 
 # Concept — What Each Surface Needs to Sync
@@ -10,6 +10,13 @@ sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrr
 Companion page: [[concept-mobile-web-parity]] — the current ~62% measurement this
 page is a plan to raise. Portal mirror:
 `nuwrrrld-portal/docs/wiki-portal/concept-sync-requirements.md`.
+
+## Portal PRs #400/#401 — LangSmith Council diagnostics
+
+For these draft changes, no mobile port or shared-module work is owed for the portal-only trace adapter
+and synthetic evaluator. Keep LangSmith credentials server-side; the mobile
+Council uses its separate backend client. Reassess if mobile begins using the
+portal's Council route or adopts a shared server-side tracing contract.
 
 ## Portal PR #293 — scheduling
 

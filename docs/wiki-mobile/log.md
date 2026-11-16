@@ -312,3 +312,17 @@ was lost.
 ## [2026-09-26] ingest | mobile fix/holdfold-fib-type — FibLevel type matches backend | pages touched: 1
 
 ## [2026-09-26] ingest | PR #185 feat(holdfold): Fibonacci ladder in live analysis panel | pages touched: 2
+
+
+## [2026-11-16] ingest | PR #63 portal LangSmith assessment (#400/#401) | pages touched: 3
+
+Assessed portal-only diagnostic and synthetic-evaluation proposals. Mobile
+`askCouncil` still delegates through `ragChat` to the ai-text backend; no mobile
+SDK, credential, API contract, client or shared module changes. Updated parity,
+sync requirements and index. Preserved historical parity figures without a new
+measurement. Corrected the premature content-free/live implication: portal
+privacy and exact-fixture checks remain release gates, not activation evidence.
+Manual changed-page checks: three linked pages exist; new content contains no
+credentials or concrete service URL; each concept page is linked from the index.
+`git diff --check` passed. No executable whole-wiki lint or app-build result is
+claimed for this documentation-only update.

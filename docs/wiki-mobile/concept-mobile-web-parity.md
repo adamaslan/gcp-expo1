@@ -2,10 +2,22 @@
 date: 2026-10-14
 type: concept
 tags: [sync, parity, mobile, web, cross-surface, shared]
-sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrrrld-portal/app, nuwrrrld-portal/app/dashboard/page.tsx, nuwrrrld-portal/app/page.tsx]
+sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrrrld-portal/app, nuwrrrld-portal/app/dashboard/page.tsx, nuwrrrld-portal/app/page.tsx, PR#400, PR#401]
 ---
 
 # Concept — Mobile ⇄ Web Parity (% Synced)
+
+## Portal PRs #400/#401 LangSmith assessment — November 16, 2026
+
+Portal draft PRs #400/#401 propose optional LangSmith diagnostics around its
+OpenRouter fallback path plus a synthetic deterministic evaluator. Their privacy
+fixes and exact-fixture verification must pass before release; this assessment
+is not evidence that tracing is live or that all payload fields are safe. The mobile
+Council still calls its backend service; neither the SDK nor a LangSmith key is
+added to this app. No client, API contract, shared module, or feature-domain
+row changes. The historical ≈76% feature-domain, ≈40% single-source, and ≈62%
+blended figures remain unchanged. This is a scoped assessment, not a fresh
+parity audit.
 
 Companion page: [[concept-sync-requirements]] — the concrete work each surface
 needs to close the gap. Portal mirror:
