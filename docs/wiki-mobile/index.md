@@ -1,6 +1,12 @@
 # Wiki Index — gcp3-mobile
 
-_Last updated: 2026-10-17 (portal workflow schedules; parity metrics unchanged for this change)_
+_Last updated: 2026-11-16 (portal LangSmith diagnostics; mobile behavior and parity unchanged)_
+
+**2026-11-16 portal LangSmith assessment:** portal PRs #400/#401 add server-side
+Council attempt traces and a synthetic fallback evaluator. No mobile code,
+shared module, or API contract changes; the historical parity figures and
+matrix remain unchanged. See [[concept-mobile-web-parity]] and
+[[concept-sync-requirements]].
 
 **2026-10-17 portal schedule assessment:** portal PR #293 reduces paired seasonal workflow starts for followed-ticker tracking and paper portfolios. No mobile feature or shared module changes; the historical ~62% parity headline and matrix are unchanged. See [[concept-mobile-web-parity]] and [[concept-sync-requirements]].
 
