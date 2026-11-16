@@ -2,8 +2,9 @@
 
 _Last updated: 2026-11-16 (portal LangSmith diagnostics; mobile behavior and parity unchanged)_
 
-**2026-11-16 portal LangSmith assessment:** portal PRs #400/#401 add server-side
-Council attempt traces and a synthetic fallback evaluator. No mobile code,
+**2026-11-16 portal LangSmith assessment:** portal draft PRs #400/#401 propose server-side
+Council attempt traces and a synthetic fallback evaluator. Privacy and dataset
+verification corrections are under review, not proof of live activation. No mobile code,
 shared module, or API contract changes; the historical parity figures and
 matrix remain unchanged. See [[concept-mobile-web-parity]] and
 [[concept-sync-requirements]].
