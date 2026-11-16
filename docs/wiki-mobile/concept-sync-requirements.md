@@ -13,7 +13,7 @@ page is a plan to raise. Portal mirror:
 
 ## Portal PRs #400/#401 — LangSmith Council diagnostics
 
-No mobile port or shared-module work is owed for the portal-only trace adapter
+For these draft changes, no mobile port or shared-module work is owed for the portal-only trace adapter
 and synthetic evaluator. Keep LangSmith credentials server-side; the mobile
 Council uses its separate backend client. Reassess if mobile begins using the
 portal's Council route or adopts a shared server-side tracing contract.
