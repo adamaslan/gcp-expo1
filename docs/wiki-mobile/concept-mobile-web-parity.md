@@ -9,8 +9,10 @@ sources: [../../lib, ../../lib/shared, ../../screens, nuwrrrld-portal/lib, nuwrr
 
 ## Portal PRs #400/#401 LangSmith assessment — November 16, 2026
 
-The portal adds optional, content-free LangSmith traces around its own
-OpenRouter fallback path plus a synthetic deterministic evaluator. The mobile
+Portal draft PRs #400/#401 propose optional LangSmith diagnostics around its
+OpenRouter fallback path plus a synthetic deterministic evaluator. Their privacy
+fixes and exact-fixture verification must pass before release; this assessment
+is not evidence that tracing is live or that all payload fields are safe. The mobile
 Council still calls its backend service; neither the SDK nor a LangSmith key is
 added to this app. No client, API contract, shared module, or feature-domain
 row changes. The historical ≈76% feature-domain, ≈40% single-source, and ≈62%
